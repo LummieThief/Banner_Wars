@@ -1,0 +1,21 @@
+{
+	"required": true,
+	"package": "io.github.LummieThief.banner_wars.mixin",
+	"compatibilityLevel": "JAVA_17",
+	"mixins": [
+		"BannerBlockMixin",
+		"BlockItemMixin",
+		"DispenserBlockMixin",
+		"ExplosionMixin",
+		"FireBlockMixin",
+		"FlowableFluidMixin",
+		"LavaFluidMixin",
+		"LightningEntityMixin",
+		"PistonHandlerMixin",
+		"SmallFireballEntityMixin",
+		"WitherEntityMixin"
+	],
+	"injectors": {
+		"defaultRequire": 1
+	}
+}

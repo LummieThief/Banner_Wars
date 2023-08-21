@@ -22,9 +22,8 @@ loom {
     splitEnvironmentSourceSets()
 
 	mods {
-		"modid" {
+		"banner_wars" {
 			sourceSet sourceSets.main
-			sourceSet sourceSets.client
 		}
 	}
 
