@@ -11,55 +11,67 @@ import net.minecraft.util.math.random.Random;
 import net.minecraft.world.World;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
-import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
+import org.spongepowered.asm.mixin.injection.ModifyVariable;
 import org.spongepowered.asm.mixin.injection.Redirect;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 @Mixin(FireBlock.class)
 public class FireBlockMixin {
-    @Unique
-    private BlockPos firePos_w706;
     @Shadow
-    protected boolean isFlammable(BlockState state) {
-        return false;
-    }
+    protected boolean isFlammable(BlockState state) {return false;}
+    @Shadow
+    private int getSpreadChance(BlockState state) {return 0;}
+    @Shadow
+    private void trySpreadingFire(World world, BlockPos pos, int spreadFactor, Random random, int currentAge) {}
 
-    @Inject(method = "scheduledTick", at = @At("HEAD"))
-    public void saveFirePosition(BlockState state, ServerWorld world, BlockPos pos, Random random, CallbackInfo ci) {
-        firePos_w706 = pos;
-    }
-
-    @Inject(method = "trySpreadingFire", at = @At(
+    // in order to have access to the fire's position, we have to do some mixin magic.
+    // First: Redirect all of the trySpreadingFire() calls in scheduledTick here and do the spreadChance check immediately.
+    // Second: If the fire would spread, check if it has permissions.
+    // Third: If the fire spread permission check passes, make a call to trySpreadingFire() again
+    // Fourth: Avoid making another spreadChance call and instead give it a 100% chance
+    @Redirect(method = "scheduledTick", at = @At(
             value = "INVOKE",
-            target = "Lnet/minecraft/world/World;getBlockState(Lnet/minecraft/util/math/BlockPos;)Lnet/minecraft/block/BlockState;",
-            ordinal = 1),
-            cancellable = true)
-    public void overrideTrySpreadingFire(World world, BlockPos pos, int spreadFactor, Random random, int currentAge, CallbackInfo ci) {
-        if (!canSpreadToChunk(firePos_w706, pos)) {
-            tryExtinguishFire(world, firePos_w706);
-            ci.cancel();
+            target = "Lnet/minecraft/block/FireBlock;trySpreadingFire(Lnet/minecraft/world/World;Lnet/minecraft/util/math/BlockPos;ILnet/minecraft/util/math/random/Random;I)V"))
+    public void redirectFireBurn(FireBlock instance, World world, BlockPos pos, int spreadFactor, Random random, int currentAge,
+                                      BlockState _state, ServerWorld _world, BlockPos _pos, Random _random) {
+        int i = this.getSpreadChance(world.getBlockState(pos));
+        if (random.nextInt(spreadFactor) < i) {
+            BlockPos firePos = _pos;
+            if (!canSpreadToChunk(firePos, pos)) {
+                tryExtinguishFire(world, firePos);
+            }
+            else {
+                trySpreadingFire(world, pos, spreadFactor, random, currentAge);
+            }
         }
     }
+    @Redirect(method = "trySpreadingFire", at = @At(value = "INVOKE", target = "Lnet/minecraft/block/FireBlock;getSpreadChance(Lnet/minecraft/block/BlockState;)I"))
+    public int skipRandomCheck(FireBlock instance, BlockState state) {
+        return Integer.MAX_VALUE;
+    }
+
     @Redirect(method = "scheduledTick", at = @At(
             value = "INVOKE",
             target = "Lnet/minecraft/server/world/ServerWorld;setBlockState(Lnet/minecraft/util/math/BlockPos;Lnet/minecraft/block/BlockState;I)Z",
             ordinal = 1))
-    public boolean overrideScheduledTick(ServerWorld world, BlockPos pos, BlockState blockState, int i) {
-        if (canSpreadToChunk(firePos_w706, pos)) {
+    public boolean redirectFireSpread(ServerWorld world, BlockPos pos, BlockState blockState, int i,
+                                         BlockState _state, ServerWorld _world, BlockPos _pos, Random _random) {
+        BlockPos firePos = _pos;
+        if (canSpreadToChunk(firePos, pos)) {
             BlockPos n = pos.north();
             BlockPos e = pos.east();
             BlockPos s = pos.south();
             BlockPos w = pos.west();
             BlockPos u = pos.up();
             BlockPos d = pos.down();
-            if ((isFlammable(world.getBlockState(n)) && canSpreadToChunk(firePos_w706, n)) ||
-                    (isFlammable(world.getBlockState(e)) && canSpreadToChunk(firePos_w706, e)) ||
-                    (isFlammable(world.getBlockState(s)) && canSpreadToChunk(firePos_w706, s)) ||
-                    (isFlammable(world.getBlockState(w)) && canSpreadToChunk(firePos_w706, w)) ||
-                    (isFlammable(world.getBlockState(u)) && canSpreadToChunk(firePos_w706, u)) ||
-                    (isFlammable(world.getBlockState(d)) && canSpreadToChunk(firePos_w706, d))) {
+            if ((isFlammable(world.getBlockState(n)) && canSpreadToChunk(firePos, n)) ||
+                    (isFlammable(world.getBlockState(e)) && canSpreadToChunk(firePos, e)) ||
+                    (isFlammable(world.getBlockState(s)) && canSpreadToChunk(firePos, s)) ||
+                    (isFlammable(world.getBlockState(w)) && canSpreadToChunk(firePos, w)) ||
+                    (isFlammable(world.getBlockState(u)) && canSpreadToChunk(firePos, u)) ||
+                    (isFlammable(world.getBlockState(d)) && canSpreadToChunk(firePos, d))) {
 
                 return world.setBlockState(pos, blockState, i);
             }
@@ -67,14 +79,12 @@ public class FireBlockMixin {
         }
         return false;
     }
-
     private void tryExtinguishFire(World world, BlockPos firePos) {
         Block downBlock = world.getBlockState(firePos.down()).getBlock();
         if(!(downBlock.equals(Blocks.NETHERRACK) || downBlock.equals(Blocks.MAGMA_BLOCK))) {
             world.removeBlock(firePos, false);
         }
     }
-
     private boolean canSpreadToChunk(BlockPos sourcePos, BlockPos spreadPos) {
         String blockBanner = TerritoryManager.GetBannerFromChunk(spreadPos.getX() >> 4, spreadPos.getZ() >> 4);
         if (blockBanner == null) {
