@@ -15,7 +15,7 @@ public class SmallFireballEntityMixin {
     @Inject(method = "onBlockHit", at = @At("HEAD"), cancellable = true)
     protected void overrideOnBlockHit(BlockHitResult blockHitResult, CallbackInfo ci) {
         BlockPos pos = blockHitResult.getBlockPos().offset(blockHitResult.getSide());
-        if (TerritoryManager.HasChunk(pos.getX() >> 4, pos.getZ() >> 4)) {
+        if (TerritoryManager.HasBanner(pos)) {
             ci.cancel();
         }
     }

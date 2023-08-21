@@ -39,7 +39,7 @@ public class FireBlockMixin {
         int i = this.getSpreadChance(world.getBlockState(pos));
         if (random.nextInt(spreadFactor) < i) {
             BlockPos firePos = _pos;
-            if (!canSpreadToChunk(firePos, pos)) {
+            if (!TerritoryManager.HasPermission(firePos, pos)) {
                 tryExtinguishFire(world, firePos);
             }
             else {
@@ -59,19 +59,19 @@ public class FireBlockMixin {
     public boolean redirectFireSpread(ServerWorld world, BlockPos pos, BlockState blockState, int i,
                                          BlockState _state, ServerWorld _world, BlockPos _pos, Random _random) {
         BlockPos firePos = _pos;
-        if (canSpreadToChunk(firePos, pos)) {
+        if (TerritoryManager.HasPermission(firePos, pos)) {
             BlockPos n = pos.north();
             BlockPos e = pos.east();
             BlockPos s = pos.south();
             BlockPos w = pos.west();
             BlockPos u = pos.up();
             BlockPos d = pos.down();
-            if ((isFlammable(world.getBlockState(n)) && canSpreadToChunk(firePos, n)) ||
-                    (isFlammable(world.getBlockState(e)) && canSpreadToChunk(firePos, e)) ||
-                    (isFlammable(world.getBlockState(s)) && canSpreadToChunk(firePos, s)) ||
-                    (isFlammable(world.getBlockState(w)) && canSpreadToChunk(firePos, w)) ||
-                    (isFlammable(world.getBlockState(u)) && canSpreadToChunk(firePos, u)) ||
-                    (isFlammable(world.getBlockState(d)) && canSpreadToChunk(firePos, d))) {
+            if ((isFlammable(world.getBlockState(n)) && TerritoryManager.HasPermission(firePos, n)) ||
+                    (isFlammable(world.getBlockState(e)) && TerritoryManager.HasPermission(firePos, e)) ||
+                    (isFlammable(world.getBlockState(s)) && TerritoryManager.HasPermission(firePos, s)) ||
+                    (isFlammable(world.getBlockState(w)) && TerritoryManager.HasPermission(firePos, w)) ||
+                    (isFlammable(world.getBlockState(u)) && TerritoryManager.HasPermission(firePos, u)) ||
+                    (isFlammable(world.getBlockState(d)) && TerritoryManager.HasPermission(firePos, d))) {
 
                 return world.setBlockState(pos, blockState, i);
             }
@@ -84,14 +84,6 @@ public class FireBlockMixin {
         if(!(downBlock.equals(Blocks.NETHERRACK) || downBlock.equals(Blocks.MAGMA_BLOCK))) {
             world.removeBlock(firePos, false);
         }
-    }
-    private boolean canSpreadToChunk(BlockPos sourcePos, BlockPos spreadPos) {
-        String blockBanner = TerritoryManager.GetBannerFromChunk(spreadPos.getX() >> 4, spreadPos.getZ() >> 4);
-        if (blockBanner == null) {
-            return true;
-        }
-        String fireBanner = TerritoryManager.GetBannerFromChunk(sourcePos.getX() >> 4, sourcePos.getZ() >> 4);
-        return blockBanner.equals(fireBanner);
     }
 }
 

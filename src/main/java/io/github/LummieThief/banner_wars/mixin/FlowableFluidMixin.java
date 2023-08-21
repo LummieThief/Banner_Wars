@@ -22,13 +22,8 @@ public class FlowableFluidMixin {
 
         BlockPos fluidPos = pos.subtract(direction.getVector());
 
-        ChunkPos blockChunk = world.getChunk(pos).getPos();
-        String banner = TerritoryManager.GetBannerFromChunk(blockChunk.x, blockChunk.z);
-        if (banner != null) {
-            ChunkPos fluidChunk = world.getChunk(fluidPos).getPos();
-            if (!banner.equals(TerritoryManager.GetBannerFromChunk(fluidChunk.x, fluidChunk.z))) {
-                info.cancel();
-            }
+        if (!TerritoryManager.HasPermission(fluidPos, pos)) {
+            info.cancel();
         }
     }
 }

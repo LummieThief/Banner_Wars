@@ -91,14 +91,29 @@ public class TerritoryManager implements ModInitializer {
         return s;
     }
 
-    public static boolean HasChunk(int chunkX, int chunkZ) {
-        return GetBannerFromChunk(chunkX, chunkZ) != null;
-    }
 
-    public static String GetBannerFromChunk(int chunkX, int chunkZ) {
+
+    public static String GetBanner(int chunkX, int chunkZ) {
         long chunkL = EncodeChunk(chunkX, chunkZ);
         String s = state.chunkToBannerMap.get(chunkL);
         return s;
+    }
+    public static boolean HasBanner(int chunkX, int chunkZ) {
+        return GetBanner(chunkX, chunkZ) != null;
+    }
+
+    public static String GetBanner(ChunkPos pos) {
+        return GetBanner(pos.x, pos.z);
+    }
+    public static boolean HasBanner(ChunkPos pos) {
+        return GetBanner(pos) != null;
+    }
+
+    public static String GetBanner(BlockPos pos) {
+        return GetBanner(pos.getX() >> 4, pos.getZ() >> 4);
+    }
+    public static boolean HasBanner(BlockPos pos) {
+        return GetBanner(pos) != null;
     }
 
     public static void AddChunk(String banner, int chunkX, int chunkZ) {
@@ -114,13 +129,13 @@ public class TerritoryManager implements ModInitializer {
     public static boolean HasPermission(World world, PlayerEntity player, BlockPos pos) {
         ChunkPos chunkPos = world.getChunk(pos).getPos();
         // chunk is unclaimed, so player has permission
-        if (!TerritoryManager.HasChunk(chunkPos.x, chunkPos.z)) {
+        if (!TerritoryManager.HasBanner(chunkPos.x, chunkPos.z)) {
             //TerritoryManager.LOGGER.info("chunk is unclaimed");
             return true;
         }
 
         // chunk is claimed, so player only has permission if their banner matches the banner that owns the chunk
-        String existingBanner = TerritoryManager.GetBannerFromChunk(chunkPos.x, chunkPos.z);
+        String existingBanner = TerritoryManager.GetBanner(chunkPos.x, chunkPos.z);
 
         ItemStack headStack = player.getEquippedStack(EquipmentSlot.HEAD);
         if (headStack != null) {
@@ -134,6 +149,15 @@ public class TerritoryManager implements ModInitializer {
         // player's banner did not match
         //TerritoryManager.LOGGER.info("banner didn't match or no banner equipped");
         return false;
+    }
+
+    public static boolean HasPermission(BlockPos source, BlockPos dest) {
+        String destBanner = TerritoryManager.GetBanner(dest);
+        if (destBanner == null) {
+            return true;
+        }
+        String sourceBanner = TerritoryManager.GetBanner(source);
+        return destBanner.equals(sourceBanner);
     }
 
     public static BlockHitResult GetPlayerHitResult(World world, PlayerEntity player, boolean includeFluid) {

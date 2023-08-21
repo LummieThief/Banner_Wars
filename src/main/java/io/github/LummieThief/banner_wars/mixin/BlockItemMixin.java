@@ -20,7 +20,7 @@ public class BlockItemMixin {
         if (world.isClient)
             return;
         ChunkPos chunkPos = world.getChunk(pos).getPos();
-        String existingBanner = TerritoryManager.GetBannerFromChunk(chunkPos.x, chunkPos.z);
+        String existingBanner = TerritoryManager.GetBanner(chunkPos.x, chunkPos.z);
         if (existingBanner == null && TerritoryManager.isBanner(stack)) {
 
             String banner = TerritoryManager.BannerToString(stack);

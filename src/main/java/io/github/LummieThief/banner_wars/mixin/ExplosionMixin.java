@@ -21,7 +21,7 @@ public class ExplosionMixin {
         Iterator<BlockPos> itr = set.iterator();
         while (itr.hasNext()) {
             BlockPos pos = itr.next();
-            if (TerritoryManager.HasChunk(pos.getX() >> 4, pos.getZ() >> 4)) {
+            if (TerritoryManager.HasBanner(pos)) {
                 itr.remove();
             }
         }

@@ -43,24 +43,13 @@ public class DispenserBlockMixin {
             // get the position of the block the dispenser will fire into
             Direction dir = blockPointerImpl.getBlockState().get(DispenserBlock.FACING);
             BlockPos outputPos = pos.add(dir.getVector());
-            // get the banner of the claim the dispenser will fire into
-            String outputBanner = TerritoryManager.GetBannerFromChunk(outputPos.getX() >> 4, outputPos.getZ() >> 4);
-            // if the block the dispenser will fire into is unclaimed, proceed as normal
-            if (outputBanner == null) {
+
+            // if the dispenser has permission, dispense as normal
+            if (TerritoryManager.HasPermission(pos, outputPos)) {
                 return oldInt;
             }
-            // the block the dispenser is firing into is claimed
             else {
-                // get the claim the dispenser itself is in
-                String blockBanner = TerritoryManager.GetBannerFromChunk(pos.getX() >> 4, pos.getZ() >> 4);
-                // if it's the same claim as the block the dispenser is firing into, proceed as normal
-                if (outputBanner.equals(blockBanner)) {
-                    return oldInt;
-                }
-                // otherwise, the dispenser is firing into a different claim
-                else {
-                    return -1;
-                }
+                return -1;
             }
         }
         return oldInt;
