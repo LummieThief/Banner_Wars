@@ -17,11 +17,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 public class FlowableFluidMixin {
     @Inject(method = "flow", at = @At("HEAD"), cancellable = true)
     private void overrideFlow(WorldAccess world, BlockPos pos, BlockState state, Direction direction, FluidState fluidState, CallbackInfo info) {
-        if (direction == direction.DOWN)
-            return;
-
         BlockPos fluidPos = pos.subtract(direction.getVector());
-
         if (!TerritoryManager.HasPermission(fluidPos, pos)) {
             info.cancel();
         }

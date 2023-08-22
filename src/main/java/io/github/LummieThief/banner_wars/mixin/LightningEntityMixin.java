@@ -15,7 +15,7 @@ public class LightningEntityMixin {
     @Shadow private int blocksSetOnFire;
     @Redirect(method = "spawnFire", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/World;setBlockState(Lnet/minecraft/util/math/BlockPos;Lnet/minecraft/block/BlockState;)Z"))
     private boolean overrideSpawnFire(World instance, BlockPos pos, BlockState state) {
-        if (TerritoryManager.HasBanner(pos)) {
+        if (TerritoryManager.HasBannerInChunk(pos)) {
             blocksSetOnFire--;
             return false;
         }

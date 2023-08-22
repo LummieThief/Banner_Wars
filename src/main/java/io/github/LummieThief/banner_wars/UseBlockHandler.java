@@ -25,7 +25,7 @@ public class UseBlockHandler implements UseBlockCallback {
         ServerPlayerEntity serverPlayer = (ServerPlayerEntity)player;
 
         BlockPos realPos = hitResult.getBlockPos().add(hitResult.getSide().getVector());
-        if (TerritoryManager.HasPermission(world, player, realPos)) {
+        if (TerritoryManager.HasPermission(player, realPos)) {
             return ActionResult.PASS;
         }
         else {

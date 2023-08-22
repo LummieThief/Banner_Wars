@@ -19,13 +19,11 @@ public class BlockItemMixin {
     protected void overridePostPlacement(BlockPos pos, World world, PlayerEntity player, ItemStack stack, BlockState state, CallbackInfoReturnable<Boolean> cir) {
         if (world.isClient)
             return;
-        ChunkPos chunkPos = world.getChunk(pos).getPos();
-        String existingBanner = TerritoryManager.GetBanner(chunkPos.x, chunkPos.z);
+        String existingBanner = TerritoryManager.GetBannerInChunk(pos);
         if (existingBanner == null && TerritoryManager.isBanner(stack)) {
-
             String banner = TerritoryManager.BannerToString(stack);
             TerritoryManager.LOGGER.info("adding chunk " + banner);
-            TerritoryManager.AddChunk(banner, chunkPos.x, chunkPos.z);
+            TerritoryManager.AddBannerToChunk(banner, pos);
         }
     }
 }

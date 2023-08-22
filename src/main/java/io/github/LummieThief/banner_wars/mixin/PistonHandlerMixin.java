@@ -24,11 +24,11 @@ public class PistonHandlerMixin {
     private void overrideTryMove(CallbackInfoReturnable<Boolean> cir) {
         TerritoryManager.LOGGER.info("from: " + posFrom.toString() + " to: " + posTo.toString());
         // get the banner that the piston block is in
-        String pistonBanner = TerritoryManager.GetBanner(posFrom);
+        String pistonBanner = TerritoryManager.GetBannerInChunk(posFrom);
         String toBanner, fromBanner;
 
         // check if the block directly in front of the piston is in a different claim
-        toBanner = TerritoryManager.GetBanner(posTo);
+        toBanner = TerritoryManager.GetBannerInChunk(posTo);
         if (toBanner != null && !toBanner.equals(pistonBanner)) {
             cir.setReturnValue(false);
         }
@@ -37,8 +37,8 @@ public class PistonHandlerMixin {
             for (BlockPos pos : movedBlocks) {
                 BlockPos toPos = pos.add(motionDirection.getVector());
                 // get the banner of the chunk the block is currently in and the chunk the block will be pushed into
-                toBanner = TerritoryManager.GetBanner(toPos);
-                fromBanner = TerritoryManager.GetBanner(pos);
+                toBanner = TerritoryManager.GetBannerInChunk(toPos);
+                fromBanner = TerritoryManager.GetBannerInChunk(pos);
                 // check if either of those blocks are in a different claim than the piston
                 if ((toBanner != null && !toBanner.equals(pistonBanner)) ||
                         (fromBanner != null && !fromBanner.equals(pistonBanner))) {

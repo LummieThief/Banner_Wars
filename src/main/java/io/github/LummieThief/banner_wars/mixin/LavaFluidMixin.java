@@ -17,7 +17,7 @@ public class LavaFluidMixin {
     @Redirect(method = "onRandomTick", at = @At(
             value = "INVOKE",
             target = "Lnet/minecraft/world/World;setBlockState(Lnet/minecraft/util/math/BlockPos;Lnet/minecraft/block/BlockState;)Z"))
-    private boolean overrideFirstCanLightFire(World world, BlockPos pos, BlockState state,
+    private boolean overrideLightFire(World world, BlockPos pos, BlockState state,
                                          World _world, BlockPos _pos, FluidState _state, Random random) {
         BlockPos lavaPos = _pos;
         if (TerritoryManager.HasPermission(lavaPos, pos)) {

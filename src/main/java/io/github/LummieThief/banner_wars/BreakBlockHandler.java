@@ -17,7 +17,7 @@ public class BreakBlockHandler implements PlayerBlockBreakEvents.Before{
         if (!(player instanceof ServerPlayerEntity) || world.isClient)
             return true;
         ServerPlayerEntity serverPlayer = (ServerPlayerEntity) player;
-        boolean hasPermission = TerritoryManager.HasPermission(world, player, pos);
+        boolean hasPermission = TerritoryManager.HasPermission(player, pos);
         if (!hasPermission) {
             BlockState worldState = world.getBlockState(pos);
             serverPlayer.networkHandler.sendPacket(new BlockUpdateS2CPacket(pos, worldState));

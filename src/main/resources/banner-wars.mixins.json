@@ -5,14 +5,17 @@
 	"mixins": [
 		"BannerBlockMixin",
 		"BlockItemMixin",
+		"BucketItemMixin",
 		"DispenserBlockMixin",
 		"ExplosionMixin",
+		"FallingBlockEntityMixin",
 		"FireBlockMixin",
 		"FlowableFluidMixin",
 		"LavaFluidMixin",
 		"LightningEntityMixin",
 		"PistonHandlerMixin",
 		"SmallFireballEntityMixin",
+		"SpongeBlockMixin",
 		"WitherEntityMixin"
 	],
 	"injectors": {

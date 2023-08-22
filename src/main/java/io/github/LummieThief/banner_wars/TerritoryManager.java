@@ -37,7 +37,6 @@ public class TerritoryManager implements ModInitializer {
         ServerLifecycleEvents.SERVER_STARTED.register(server -> {
             state = ServerState.getServerState(server);
             world = server.getOverworld();
-            //LOGGER.info(world.getBlockState(new BlockPos(0, 500, 0)).isAir() + " tt");
         });
 
         ServerEntityEvents.EQUIPMENT_CHANGE.register((livingEntity, equipmentSlot, previous, next) ->
@@ -53,8 +52,6 @@ public class TerritoryManager implements ModInitializer {
         UseItemCallback.EVENT.register(new UseItemHandler());
 
         PlayerBlockBreakEvents.BEFORE.register(new BreakBlockHandler());
-        //PlayerBlockBreakEvents.CANCELED.register(new BreakBlockCancelledHandler());
-        //PlayerBlockBreakEvents.AFTER.register(new AfterBreakBlockHandler());
     }
 
     /**
@@ -69,18 +66,6 @@ public class TerritoryManager implements ModInitializer {
         return id >= 1087 && id <= 1102;
     }
 
-    public static Long EncodeChunk(int chunkX, int chunkZ) {
-        long lcx = Integer.toUnsignedLong(chunkX) << 32;
-        long lcz = Integer.toUnsignedLong(chunkZ);
-        return lcx | lcz;
-    }
-
-    public static Pair<Integer, Integer> DecodeChunk(Long chunkL) {
-        int x = (int)(chunkL >> 32);
-        int z = (int)((chunkL << 32) >> 32);
-        return new Pair<>(x, z);
-    }
-
     public static String BannerToString(ItemStack bannerStack) {
         String s = Item.getRawId(bannerStack.getItem()) + "";
         NbtCompound nbt = bannerStack.getNbt();
@@ -91,82 +76,116 @@ public class TerritoryManager implements ModInitializer {
         return s;
     }
 
-
-
-    public static String GetBanner(int chunkX, int chunkZ) {
-        long chunkL = EncodeChunk(chunkX, chunkZ);
-        String s = state.chunkToBannerMap.get(chunkL);
-        return s;
-    }
-    public static boolean HasBanner(int chunkX, int chunkZ) {
-        return GetBanner(chunkX, chunkZ) != null;
-    }
-
-    public static String GetBanner(ChunkPos pos) {
-        return GetBanner(pos.x, pos.z);
-    }
-    public static boolean HasBanner(ChunkPos pos) {
-        return GetBanner(pos) != null;
-    }
-
-    public static String GetBanner(BlockPos pos) {
-        return GetBanner(pos.getX() >> 4, pos.getZ() >> 4);
-    }
-    public static boolean HasBanner(BlockPos pos) {
-        return GetBanner(pos) != null;
+    // Encodes a blockPos as a single long, with the first 26 bits being the X value, the next 9 bits being the Y value,
+    // the next 26 bits being the Z value, and the last 3 bits being the sign of each of X, Y, and Z
+    public static Long EncodeBlockPosition(BlockPos blockPos) {
+        int bannerX = blockPos.getX();
+        int bannerY = blockPos.getY();
+        int bannerZ = blockPos.getZ();
+        long code = 0;
+        code |= Integer.toUnsignedLong(Math.abs(bannerX)) << 38;
+        code |= Integer.toUnsignedLong(Math.abs(bannerY)) << 29;
+        code |= Integer.toUnsignedLong(Math.abs(bannerZ)) << 3;
+        if (bannerX < 0)
+            code |= 0b100;
+        if (bannerY < 0)
+            code |= 0b010;
+        if (bannerZ < 0)
+            code |= 0b001;
+        return code;
     }
 
-    public static void AddChunk(String banner, int chunkX, int chunkZ) {
-        long chunkL = EncodeChunk(chunkX, chunkZ);
-        Set<Long> set = state.bannerToChunkMap.getOrDefault(banner, new HashSet<>());
-        set.add(chunkL);
-        state.bannerToChunkMap.put(banner, set);
-        state.chunkToBannerMap.put(chunkL, banner);
-        //LOGGER.info("added " + chunkL + " -> " + banner + " to chunkToBannerMap");
+    // Encodes the chunk that contains the specified block into as a single long by converting it into a block and
+    // encoding the block position. If the block was below y = 0, then the Y value of the BlockPos will be -1.
+    // Otherwise, it will be 1.
+    public static Long EncodeChunkPosition(BlockPos blockInChunk) {
+        int y = blockInChunk.getY() < 0 ? -1 : 1;
+        BlockPos chunkPos = new BlockPos(blockInChunk.getX() >> 4, y, blockInChunk.getZ() >> 4);
+        return EncodeBlockPosition(chunkPos);
+    }
+
+    // Encodes a chunk position into a single long by converting it into a block and encoding the block position.
+    // If belowZero is set, then the Y value of the BlockPos will be -1. Otherwise, it will be 1.
+    public static Long EncodeChunkPosition(ChunkPos chunkPos, boolean belowZero) {
+        int y = belowZero ? -1 : 1;
+        BlockPos pos = new BlockPos(chunkPos.x, y, chunkPos.z);
+        return EncodeBlockPosition(pos);
+    }
+
+    // Decodes an encoded block position. If a chunk position is desired, the user is expected to convert the BlockPos
+    // into a ChunkPos for the sake of not requiring output parameters.
+    public static BlockPos DecodePosition(Long code) {
+        long bannerX = code >>> 38;
+        long bannerY = (code << 26) >>> 55;
+        long bannerZ = (code << 35) >>> 38;
+        if (((code >> 2) & 1) == 1) bannerX *= -1;
+        if (((code >> 1) & 1) == 1) bannerY *= -1;
+        if ((code & 1) == 1) bannerZ *= -1;
+        return new BlockPos((int)bannerX, (int)bannerY, (int)bannerZ);
+    }
+
+    // Takes an encoded block position and re-encodes it as the chunk that contains that block
+    public static Long ConvertBlockEncodingToChunkEncoding(Long bannerPos) {
+        return EncodeChunkPosition(DecodePosition(bannerPos));
+    }
+
+    public static String GetBannerInChunk(ChunkPos pos, boolean belowZero) {
+        return state.chunkToBannerMap.get(EncodeChunkPosition(pos, belowZero));
+    }
+    public static String GetBannerInChunk(BlockPos pos) {
+        return state.chunkToBannerMap.get(EncodeChunkPosition(pos));
+    }
+    public static boolean HasBannerInChunk(BlockPos pos) {
+        return GetBannerInChunk(pos) != null;
+    }
+
+    public static void AddBannerToChunk(String banner, BlockPos bannerPos) {
+        long chunkCode = EncodeChunkPosition(bannerPos);
+        long blockCode = EncodeBlockPosition(bannerPos);
+        Set<Long> set = state.bannerToPositionsMap.getOrDefault(banner, new HashSet<>());
+        set.add(blockCode);
+        state.bannerToPositionsMap.put(banner, set);
+        state.chunkToBannerMap.put(chunkCode, banner);
         state.markDirty();
     }
 
-    public static boolean HasPermission(World world, PlayerEntity player, BlockPos pos) {
-        ChunkPos chunkPos = world.getChunk(pos).getPos();
-        // chunk is unclaimed, so player has permission
-        if (!TerritoryManager.HasBanner(chunkPos.x, chunkPos.z)) {
-            //TerritoryManager.LOGGER.info("chunk is unclaimed");
+    public static boolean HasPermission(PlayerEntity player, BlockPos pos) {
+        String banner = TerritoryManager.GetBannerInChunk(pos);
+        if (banner == null) {
+            // chunk is unclaimed, so player has permission
             return true;
         }
 
-        // chunk is claimed, so player only has permission if their banner matches the banner that owns the chunk
-        String existingBanner = TerritoryManager.GetBanner(chunkPos.x, chunkPos.z);
-
+        // chunk is claimed, so player only has permission if their banner matches the banner in the chunk
         ItemStack headStack = player.getEquippedStack(EquipmentSlot.HEAD);
         if (headStack != null) {
             String headBanner = TerritoryManager.BannerToString(headStack);
-            if (existingBanner.equals(headBanner)) {
-                //TerritoryManager.LOGGER.info("banner matched");
+            if (banner.equals(headBanner)) {
                 return true;
             }
         }
 
         // player's banner did not match
-        //TerritoryManager.LOGGER.info("banner didn't match or no banner equipped");
         return false;
     }
 
     public static boolean HasPermission(BlockPos source, BlockPos dest) {
-        String destBanner = TerritoryManager.GetBanner(dest);
+        String destBanner = TerritoryManager.GetBannerInChunk(dest);
         if (destBanner == null) {
             return true;
         }
-        String sourceBanner = TerritoryManager.GetBanner(source);
+        String sourceBanner = TerritoryManager.GetBannerInChunk(source);
         return destBanner.equals(sourceBanner);
     }
 
-    public static BlockHitResult GetPlayerHitResult(World world, PlayerEntity player, boolean includeFluid) {
-        float maxDistance = 4.2f;
+    public static BlockHitResult GetPlayerHitResult(PlayerEntity player, boolean includeFluid) {
+        /*float maxDistance = 4.2f;
         if (player instanceof ServerPlayerEntity) {
             ServerPlayerEntity serverPlayer = (ServerPlayerEntity) player;
             if (serverPlayer.interactionManager.getGameMode() != GameMode.SURVIVAL)
                 maxDistance = 4.7f;
-        }
+        }*/
+        float maxDistance = 5f;
         HitResult hit = player.raycast(maxDistance, 0, includeFluid);
         if (hit.getType() == HitResult.Type.BLOCK) {
             return (BlockHitResult) hit;

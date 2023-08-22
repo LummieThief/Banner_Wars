@@ -23,7 +23,7 @@ public abstract class BannerBlockMixin extends AbstractBannerBlock implements Eq
 
     @Override
     public void scheduledTick(BlockState state, ServerWorld world, BlockPos pos, Random random) {
-        TerritoryManager.LOGGER.info("schedule success!");
+        TerritoryManager.LOGGER.info("Im gonna need to fix that");
         world.getRandomAlivePlayer().networkHandler.sendPacket(new BlockUpdateS2CPacket(pos, world.getBlockState(pos)));
         world.updateListeners(pos, world.getBlockState(pos), world.getBlockState(pos), Block.NOTIFY_LISTENERS);
     }
