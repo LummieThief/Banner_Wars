@@ -15,6 +15,7 @@ import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
 
+//TODO: add a check when using a block that's in a chunk, but you are clicking on a side of the block adjacent to another chunk
 public class UseBlockHandler implements UseBlockCallback {
     @Override
     public ActionResult interact(PlayerEntity player, World world, Hand hand, BlockHitResult hitResult) {
@@ -24,8 +25,9 @@ public class UseBlockHandler implements UseBlockCallback {
         }
         ServerPlayerEntity serverPlayer = (ServerPlayerEntity)player;
 
-        BlockPos realPos = hitResult.getBlockPos().add(hitResult.getSide().getVector());
-        if (TerritoryManager.HasPermission(player, realPos)) {
+        BlockPos blockPos = hitResult.getBlockPos();
+        BlockPos tangentPos = blockPos.add(hitResult.getSide().getVector());
+        if (TerritoryManager.HasPermission(player, tangentPos)) {
             return ActionResult.PASS;
         }
         else {

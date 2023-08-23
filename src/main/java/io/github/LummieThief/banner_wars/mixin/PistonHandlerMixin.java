@@ -22,7 +22,6 @@ public class PistonHandlerMixin {
 
     @Inject(method = "calculatePush", at = @At(value="RETURN"), cancellable = true)
     private void overrideTryMove(CallbackInfoReturnable<Boolean> cir) {
-        TerritoryManager.LOGGER.info("from: " + posFrom.toString() + " to: " + posTo.toString());
         // get the banner that the piston block is in
         String pistonBanner = TerritoryManager.GetBannerInChunk(posFrom);
         String toBanner, fromBanner;

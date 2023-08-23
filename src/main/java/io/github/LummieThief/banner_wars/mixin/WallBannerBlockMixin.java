@@ -11,9 +11,9 @@ import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.random.Random;
 import org.spongepowered.asm.mixin.Mixin;
 
-@Mixin(BannerBlock.class)
-public abstract class BannerBlockMixin extends AbstractBannerBlock implements Equipment {
-    protected BannerBlockMixin(DyeColor color, Settings settings) {
+@Mixin(WallBannerBlock.class)
+public abstract class WallBannerBlockMixin extends AbstractBannerBlock implements Equipment {
+    protected WallBannerBlockMixin(DyeColor color, Settings settings) {
         super(color, settings);
     }
 
@@ -21,7 +21,7 @@ public abstract class BannerBlockMixin extends AbstractBannerBlock implements Eq
         return EquipmentSlot.HEAD;
     }
 
-    /*@Override
+   /* @Override
     public void scheduledTick(BlockState state, ServerWorld world, BlockPos pos, Random random) {
         //TODO: FIX THIS
         TerritoryManager.LOGGER.info("Im gonna need to fix that");
