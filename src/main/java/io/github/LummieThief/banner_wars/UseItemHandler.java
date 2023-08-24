@@ -1,6 +1,7 @@
 package io.github.LummieThief.banner_wars;
 
 import net.fabricmc.fabric.api.event.player.UseItemCallback;
+import net.minecraft.block.Waterloggable;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.fluid.Fluids;
@@ -22,10 +23,10 @@ public class UseItemHandler implements UseItemCallback {
         if (!(player instanceof ServerPlayerEntity) || world.isClient) {
             return TypedActionResult.pass(handItem);
         }
-
-        // We don't want to block functional items, we only want to block items that modify blocks
         Item item = handItem.getItem();
-        if (!(handItem.getUseAction() == UseAction.BRUSH || item instanceof FluidModificationItem)) {
+
+        // We only want to block buckets here
+        if (!(item instanceof FluidModificationItem)) {
             return TypedActionResult.pass(handItem);
         }
 
@@ -36,16 +37,17 @@ public class UseItemHandler implements UseItemCallback {
                 includeFluid = true;
             }
         }
-
         ServerPlayerEntity serverPlayer = (ServerPlayerEntity) player;
-
 
         BlockHitResult hit = TerritoryManager.GetPlayerHitResult(serverPlayer, includeFluid);
         if (hit == null) {
             return TypedActionResult.pass(handItem);
         }
 
-        BlockPos realPos = hit.getBlockPos().add(hit.getSide().getVector());
+        BlockPos realPos = hit.getBlockPos();
+        if (!(world.getBlockState(hit.getBlockPos()).getBlock() instanceof Waterloggable))
+            realPos = realPos.add(hit.getSide().getVector());
+
         if (TerritoryManager.HasPermission(serverPlayer, realPos)) {
             return TypedActionResult.pass(handItem);
         }

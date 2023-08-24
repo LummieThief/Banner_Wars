@@ -49,7 +49,7 @@ public class TerritoryManager implements ModInitializer {
         });
 
         UseBlockCallback.EVENT.register(new UseBlockHandler());
-        //UseItemCallback.EVENT.register(new UseItemHandler());
+        UseItemCallback.EVENT.register(new UseItemHandler());
 
         PlayerBlockBreakEvents.BEFORE.register(new BreakBlockHandler());
     }

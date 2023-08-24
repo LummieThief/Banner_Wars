@@ -37,54 +37,9 @@ public class UseBlockHandler implements UseBlockCallback {
                         screenHandler.getRevision(),
                         slot,
                         player.getStackInHand(hand)));
-                BlockPos pos = hitResult.getBlockPos();
-                serverPlayer.networkHandler.sendPacket(new BlockUpdateS2CPacket(pos, world.getBlockState(pos)));
-                world.updateListeners(pos, world.getBlockState(pos), world.getBlockState(pos), Block.NOTIFY_LISTENERS);
                 return ActionResult.FAIL;
             }
         }
         return ActionResult.PASS;
-
-        /*
-        ItemStack handItem = player.getStackInHand(hand);
-        ServerPlayerEntity serverPlayer = (ServerPlayerEntity)player;
-        BlockPos blockPos = hitResult.getBlockPos();
-        BlockPos tangentPos = blockPos.add(hitResult.getSide().getVector());
-
-        if (handItem.getItem() instanceof VerticallyAttachableBlockItem && !TerritoryManager.HasPermission(player, tangentPos)) {
-            ScreenHandler screenHandler = player.currentScreenHandler;
-            PlayerInventory inventory = player.getInventory();
-            int slot = hand == Hand.OFF_HAND ? 45 : PlayerInventory.MAIN_SIZE + inventory.selectedSlot;
-            serverPlayer.networkHandler.sendPacket(new ScreenHandlerSlotUpdateS2CPacket(
-                    screenHandler.syncId,
-                    screenHandler.getRevision(),
-                    slot,
-                    handItem));
-            BlockPos pos = hitResult.getBlockPos();
-            serverPlayer.networkHandler.sendPacket(new BlockUpdateS2CPacket(pos, world.getBlockState(pos)));
-            world.updateListeners(pos, world.getBlockState(pos), world.getBlockState(pos), Block.NOTIFY_LISTENERS);
-            return ActionResult.FAIL;
-        }
-
-
-        return ActionResult.PASS;
-         */
-/*        if () {
-            return ActionResult.PASS;
-        }
-        else {
-            ScreenHandler screenHandler = player.currentScreenHandler;
-            PlayerInventory inventory = player.getInventory();
-            int slot = hand == Hand.OFF_HAND ? 45 : PlayerInventory.MAIN_SIZE + inventory.selectedSlot;
-            serverPlayer.networkHandler.sendPacket(new ScreenHandlerSlotUpdateS2CPacket(
-                    screenHandler.syncId,
-                    screenHandler.getRevision(),
-                    slot,
-                    handItem));
-            BlockPos pos = hitResult.getBlockPos();
-            serverPlayer.networkHandler.sendPacket(new BlockUpdateS2CPacket(pos, world.getBlockState(pos)));
-            world.updateListeners(pos, world.getBlockState(pos), world.getBlockState(pos), Block.NOTIFY_LISTENERS);
-            return ActionResult.FAIL;
-        }*/
     }
 }

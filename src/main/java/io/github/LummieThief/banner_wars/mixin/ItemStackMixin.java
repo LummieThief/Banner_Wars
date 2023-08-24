@@ -32,8 +32,9 @@ public abstract class ItemStackMixin {
 
     @Redirect(method = "useOnBlock", at = @At(value = "INVOKE", target = "Lnet/minecraft/item/Item;useOnBlock(Lnet/minecraft/item/ItemUsageContext;)Lnet/minecraft/util/ActionResult;"))
     private ActionResult overrideUseOnBlock(Item item, ItemUsageContext context) {
+
         PlayerEntity playerEntity = context.getPlayer();
-        if (!(playerEntity instanceof ServerPlayerEntity) || item instanceof BlockItem && !(item instanceof VerticallyAttachableBlockItem)) {
+        if (!(playerEntity instanceof ServerPlayerEntity) || (item instanceof BlockItem && !(item instanceof VerticallyAttachableBlockItem))) {
             return item.useOnBlock(context);
         }
         ServerPlayerEntity player = (ServerPlayerEntity)playerEntity;
@@ -54,8 +55,6 @@ public abstract class ItemStackMixin {
                     screenHandler.getRevision(),
                     slot,
                     player.getStackInHand(hand)));
-            player.networkHandler.sendPacket(new BlockUpdateS2CPacket(blockPos, world.getBlockState(blockPos)));
-            world.updateListeners(blockPos, world.getBlockState(blockPos), world.getBlockState(blockPos), Block.NOTIFY_LISTENERS);
             return ActionResult.FAIL;
         }
     }

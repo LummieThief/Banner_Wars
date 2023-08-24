@@ -37,7 +37,7 @@ public class BlockItemMixin {
     }
 
     @Inject(method = "canPlace", at = @At("RETURN"), cancellable = true)
-    private void logPlacement(ItemPlacementContext context, BlockState state, CallbackInfoReturnable<Boolean> cir) {
+    private void overrideCanPlace(ItemPlacementContext context, BlockState state, CallbackInfoReturnable<Boolean> cir) {
         if (context.getWorld().isClient)
             return;
         if (cir.getReturnValue() && !TerritoryManager.HasPermission(context.getPlayer(), context.getBlockPos())) {
