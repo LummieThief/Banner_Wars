@@ -8,6 +8,7 @@
 		"BlockItemMixin",
 		"BucketItemMixin",
 		"DispenserBlockMixin",
+		"EntityMixin",
 		"ExplosionMixin",
 		"FallingBlockEntityMixin",
 		"FireBlockMixin",

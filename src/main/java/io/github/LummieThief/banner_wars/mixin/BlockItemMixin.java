@@ -40,7 +40,6 @@ public class BlockItemMixin {
     private void logPlacement(ItemPlacementContext context, BlockState state, CallbackInfoReturnable<Boolean> cir) {
         if (context.getWorld().isClient)
             return;
-        TerritoryManager.LOGGER.info("does this work?");
         if (cir.getReturnValue() && !TerritoryManager.HasPermission(context.getPlayer(), context.getBlockPos())) {
             PlayerEntity player = context.getPlayer();
             ServerPlayerEntity serverPlayer = (ServerPlayerEntity)player;

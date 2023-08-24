@@ -19,6 +19,7 @@ import net.minecraft.world.World;
 import org.apache.logging.log4j.core.jmx.Server;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Overwrite;
+import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.ModifyVariable;
@@ -26,11 +27,13 @@ import org.spongepowered.asm.mixin.injection.Redirect;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 @Mixin(ItemStack.class)
-public class ItemStackMixin {
+public abstract class ItemStackMixin {
+    @Shadow public abstract Item getItem();
+
     @Redirect(method = "useOnBlock", at = @At(value = "INVOKE", target = "Lnet/minecraft/item/Item;useOnBlock(Lnet/minecraft/item/ItemUsageContext;)Lnet/minecraft/util/ActionResult;"))
     private ActionResult overrideUseOnBlock(Item item, ItemUsageContext context) {
         PlayerEntity playerEntity = context.getPlayer();
-        if (!(playerEntity instanceof ServerPlayerEntity) || item instanceof BlockItem) {
+        if (!(playerEntity instanceof ServerPlayerEntity) || item instanceof BlockItem && !(item instanceof VerticallyAttachableBlockItem)) {
             return item.useOnBlock(context);
         }
         ServerPlayerEntity player = (ServerPlayerEntity)playerEntity;
