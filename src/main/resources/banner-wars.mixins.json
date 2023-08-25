@@ -20,7 +20,8 @@
 		"SmallFireballEntityMixin",
 		"SpongeBlockMixin",
 		"WallBannerBlockMixin",
-		"WitherEntityMixin"
+		"WitherEntityMixin",
+		"WorldMixin"
 	],
 	"injectors": {
 		"defaultRequire": 1
