@@ -7,9 +7,11 @@
 		"BannerBlockMixin",
 		"BlockItemMixin",
 		"BucketItemMixin",
+		"CompassItemMixin",
 		"DispenserBlockMixin",
 		"EntityMixin",
 		"ExplosionMixin",
+		"EyeOfEnderEntityMixin",
 		"FallingBlockEntityMixin",
 		"FireBlockMixin",
 		"FlowableFluidMixin",
@@ -20,8 +22,7 @@
 		"SmallFireballEntityMixin",
 		"SpongeBlockMixin",
 		"WallBannerBlockMixin",
-		"WitherEntityMixin",
-		"WorldMixin"
+		"WitherEntityMixin"
 	],
 	"injectors": {
 		"defaultRequire": 1
