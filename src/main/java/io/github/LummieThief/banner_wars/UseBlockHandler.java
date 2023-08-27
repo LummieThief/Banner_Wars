@@ -21,6 +21,9 @@ import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
 
+// After an item fails the useOnBlock check (or if the player is empty-handed), it will come here to check if the block
+// itself can be used instead. This is a fairly simple check since we only need to check if the block is in a claimed
+// chunk, but there is a notable edge case which allows players to open containers.
 public class UseBlockHandler implements UseBlockCallback {
     @Override
     public ActionResult interact(PlayerEntity player, World world, Hand hand, BlockHitResult hitResult) {
@@ -28,9 +31,17 @@ public class UseBlockHandler implements UseBlockCallback {
             return ActionResult.PASS;
         }
         ServerPlayerEntity serverPlayer = (ServerPlayerEntity) player;
+
+        // if the player doesn't have permission
         if (!TerritoryManager.HasPermission(player, hitResult.getBlockPos())) {
             BlockEntity be = world.getBlockEntity(hitResult.getBlockPos());
-            if (!(be instanceof LockableContainerBlockEntity)) {
+            // check if they are trying to open a container, and if they are then let it pass
+            if (be instanceof LockableContainerBlockEntity && !player.isSneaking()) {
+                TerritoryManager.LOGGER.info("UseBlock: override fail");
+                return ActionResult.PASS;
+            }
+            // otherwise, they truly don't have permission
+            else {
                 ScreenHandler screenHandler = player.currentScreenHandler;
                 PlayerInventory inventory = player.getInventory();
                 int slot = hand == Hand.OFF_HAND ? 45 : PlayerInventory.MAIN_SIZE + inventory.selectedSlot;
@@ -39,9 +50,11 @@ public class UseBlockHandler implements UseBlockCallback {
                         screenHandler.getRevision(),
                         slot,
                         player.getStackInHand(hand)));
+                TerritoryManager.LOGGER.info("UseBlock: fail");
                 return ActionResult.FAIL;
             }
         }
+        TerritoryManager.LOGGER.info("UseBlock: pass");
         return ActionResult.PASS;
     }
 }

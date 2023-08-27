@@ -16,6 +16,8 @@ import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
 
+// For some reason, buckets don't get caught by any of the other 3 fail safes, so we need a 4th here to specifically
+// prevent bucket items.
 public class UseItemHandler implements UseItemCallback {
     @Override
     public TypedActionResult<ItemStack> interact(PlayerEntity player, World world, Hand hand) {
@@ -23,6 +25,7 @@ public class UseItemHandler implements UseItemCallback {
         if (!(player instanceof ServerPlayerEntity) || world.isClient) {
             return TypedActionResult.pass(handItem);
         }
+        TerritoryManager.LOGGER.info("UseItemHandler: head");
         Item item = handItem.getItem();
 
         // We only want to block buckets here

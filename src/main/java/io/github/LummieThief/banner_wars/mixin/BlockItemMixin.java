@@ -22,6 +22,9 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
+// If using the item has failed and using the item on the block has failed, then blocks will come here to try one more
+// time to be placed, and it's fairly simple to prevent them. The important part of this step in the process is that it's
+// when we can confirm than a block has been placed, and it's where we add new claims.
 @Mixin(BlockItem.class)
 public class BlockItemMixin {
     @Inject(method = "postPlacement", at = @At("HEAD"))
@@ -40,15 +43,16 @@ public class BlockItemMixin {
     private void overrideCanPlace(ItemPlacementContext context, BlockState state, CallbackInfoReturnable<Boolean> cir) {
         if (context.getWorld().isClient)
             return;
+        PlayerEntity player = context.getPlayer();
+        Hand hand = context.getHand();
+        ItemStack handItem = player.getStackInHand(hand);
+        PlayerInventory inventory = player.getInventory();
         if (cir.getReturnValue() && !TerritoryManager.HasPermission(context.getPlayer(), context.getBlockPos())) {
-            PlayerEntity player = context.getPlayer();
+
             ServerPlayerEntity serverPlayer = (ServerPlayerEntity)player;
             World world = context.getWorld();
 
             ScreenHandler screenHandler = player.currentScreenHandler;
-            PlayerInventory inventory = player.getInventory();
-            Hand hand = context.getHand();
-            ItemStack handItem = player.getStackInHand(hand);
             int slot = hand == Hand.OFF_HAND ? 45 : PlayerInventory.MAIN_SIZE + inventory.selectedSlot;
             serverPlayer.networkHandler.sendPacket(new ScreenHandlerSlotUpdateS2CPacket(
                     screenHandler.syncId,
@@ -58,7 +62,9 @@ public class BlockItemMixin {
             BlockPos pos = context.getBlockPos();
             serverPlayer.networkHandler.sendPacket(new BlockUpdateS2CPacket(pos, world.getBlockState(pos)));
             world.updateListeners(pos, world.getBlockState(pos), world.getBlockState(pos), Block.NOTIFY_LISTENERS);
+            TerritoryManager.LOGGER.info("BlockItemMixin: fail");
             cir.setReturnValue(false);
         }
+        TerritoryManager.LOGGER.info("BlockItemMixin: pass");
     }
 }

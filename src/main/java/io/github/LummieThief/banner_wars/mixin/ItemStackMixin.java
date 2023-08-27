@@ -26,6 +26,10 @@ import org.spongepowered.asm.mixin.injection.ModifyVariable;
 import org.spongepowered.asm.mixin.injection.Redirect;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
+// The first line of defense for grief protection. This cancels actions such as putting glow ink on a sign, stripping
+// logs with an axe, or placing an armor stand. It doesnt stop blocks from being placed other than vertically attachable
+// blocks which need their own special handling. This is also the place where banners are prevented from being placed
+// if the player is not wearing a matching banner.
 @Mixin(ItemStack.class)
 public abstract class ItemStackMixin {
     @Shadow public abstract Item getItem();
@@ -38,13 +42,18 @@ public abstract class ItemStackMixin {
             return item.useOnBlock(context);
         }
         ServerPlayerEntity player = (ServerPlayerEntity)playerEntity;
-        BlockPos blockPos = context.getBlockPos();
 
-        if (TerritoryManager.HasPermission(playerEntity, blockPos)) {
+        ItemStack stack = (ItemStack)(Object)this;
+        boolean territorialPermission = TerritoryManager.HasPermission(context.getPlayer(), context.getBlockPos());
+        boolean personalPermission = !TerritoryManager.isBanner(stack) ||
+                (TerritoryManager.BannerToString(stack).equals(TerritoryManager.BannerToString(context.getPlayer().getInventory().getArmorStack(3))) &&
+                        !TerritoryManager.HasBannerInChunk(context.getBlockPos()));
+
+        if (territorialPermission && personalPermission) {
+            TerritoryManager.LOGGER.info("ItemStackMixin: pass");
             return item.useOnBlock(context);
         }
         else {
-            World world = context.getWorld();
             Hand hand = context.getHand();
             ScreenHandler screenHandler = player.currentScreenHandler;
             PlayerInventory inventory = player.getInventory();
@@ -55,6 +64,7 @@ public abstract class ItemStackMixin {
                     screenHandler.getRevision(),
                     slot,
                     player.getStackInHand(hand)));
+            TerritoryManager.LOGGER.info("ItemStackMixin: fail");
             return ActionResult.FAIL;
         }
     }

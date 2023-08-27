@@ -18,7 +18,7 @@ public class EntityMixin {
     @Inject(method = "isInvulnerableTo", at = @At("HEAD"), cancellable = true)
     public void overrideIsInvulnerableTo(DamageSource damageSource, CallbackInfoReturnable<Boolean> cir) {
         Entity t = ((Entity)(Object)this);
-        if (t instanceof HostileEntity)
+        if (t instanceof HostileEntity || t instanceof PlayerEntity)
             return;
         BlockPos pos = t.getBlockPos();
         if (damageSource.getAttacker() instanceof ServerPlayerEntity)

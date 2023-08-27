@@ -78,6 +78,8 @@ public class TerritoryManager implements ModInitializer {
     }
 
     public static String BannerToString(ItemStack bannerStack) {
+        if (bannerStack == null)
+            return "";
         String s = Item.getRawId(bannerStack.getItem()) + "";
         NbtCompound nbt = bannerStack.getNbt();
         if (nbt != null) {

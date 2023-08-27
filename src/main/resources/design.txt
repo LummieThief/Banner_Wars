@@ -1,0 +1,15 @@
+---BASICS---
+Banners will not require a supporting block.
+Banners that are broken will lose their pattern.
+Banners with a pattern can be equipped in the helmet slot.
+TODO: A banner with a pattern can only be placed by a player wearing a matching banner in their helmet slot.
+TODO: When a banner with a pattern is placed in a chunk, it claims that chunk for 24 hours.
+A claimed chunk can only be interacted with by a player wearing a matching banner in their helmet slot.
+    *An exception to this rule is made for blocks that can store items, which can be interacted with by anyone.
+TODO: Destroying a banner with a pattern will un-claim the chunk it was in.
+TODO: When a claim's timer reaches 0, the banner that claimed it loses its pattern and the chunk becomes unclaimed.
+Right-clicking a banner has the following effects:
+    1. If the clicked banner has a pattern and the player who clicked it is wearing a matching banner in their helmet slot:
+        TODO: The clicked banner's claim timer is refreshed to 24 hours.
+    2. If the clicked banner has no pattern, the player who clicked it is wearing a banner, and the chunk containing the clicked banner is not already claimed:
+        TODO: The clicked banner turns into the banner the player is wearing on their head, and it claims the chunk for 24 hours.

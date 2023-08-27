@@ -29,6 +29,7 @@ import net.minecraft.world.RaycastContext;
 import net.minecraft.world.World;
 import net.minecraft.world.event.GameEvent;
 import net.minecraft.world.poi.PointOfInterestTypes;
+import org.apache.logging.log4j.core.jmx.Server;
 import org.slf4j.Logger;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Overwrite;
@@ -60,25 +61,26 @@ public class CompassItemMixin extends Item {
         if (world.isClient() || !(user instanceof ServerPlayerEntity)){
             return TypedActionResult.pass(itemStack);
         }
+        ServerWorld serverWorld = (ServerWorld)world;
         user.setCurrentHand(hand);
         user.getItemCooldownManager().set(this, 80);
         BlockPos blockPos = new BlockPos(26, -34,151); //TODO: Make this find a decaying banner
         if (blockPos != null) {
             ItemStack dyeStack = Items.RED_DYE.getDefaultStack();
 
-            EyeOfEnderEntity eyeOfEnderEntity = new EyeOfEnderEntity(world, user.getX(), user.getBodyY(0.5), user.getZ());
+            EyeOfEnderEntity eyeOfEnderEntity = new EyeOfEnderEntity(serverWorld, user.getX(), user.getBodyY(0.5), user.getZ());
             eyeOfEnderEntity.setItem(dyeStack);
             eyeOfEnderEntity.initTargetPos(blockPos);
 
-            world.emitGameEvent(GameEvent.PROJECTILE_SHOOT, eyeOfEnderEntity.getPos(), GameEvent.Emitter.of(user));
-            world.spawnEntity(eyeOfEnderEntity);
+            serverWorld.emitGameEvent(GameEvent.PROJECTILE_SHOOT, eyeOfEnderEntity.getPos(), GameEvent.Emitter.of(user));
+            serverWorld.spawnEntity(eyeOfEnderEntity);
 
             ((IEyeOfEnderEntityMixin)eyeOfEnderEntity).markTracker();
 
-            world.playSound((PlayerEntity)null, user.getX(), user.getY(), user.getZ(), SoundEvents.ENTITY_ENDER_EYE_LAUNCH, SoundCategory.NEUTRAL, 0.5F, 0.4F / (world.getRandom().nextFloat() * 0.4F + 0.8F));
-            world.syncWorldEvent((PlayerEntity)null, 1003, user.getBlockPos(), 0);
+            serverWorld.playSound((PlayerEntity)null, user.getX(), user.getY(), user.getZ(), SoundEvents.ENTITY_ENDER_EYE_LAUNCH, SoundCategory.NEUTRAL, 0.5F, 0.4F / (serverWorld.getRandom().nextFloat() * 0.4F + 0.8F));
 
             user.swingHand(hand, true);
+
         }
         return TypedActionResult.success(itemStack);
     }
