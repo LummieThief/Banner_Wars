@@ -2,8 +2,8 @@
 Banners will not require a supporting block.
 Banners that are broken will lose their pattern.
 Banners with a pattern can be equipped in the helmet slot.
-TODO: A banner with a pattern can only be placed by a player wearing a matching banner in their helmet slot.
-TODO: When a banner with a pattern is placed in a chunk, it claims that chunk for 24 hours.
+A banner with a pattern can only be placed by a player wearing a matching banner in their helmet slot.
+When a banner with a pattern is placed in a chunk, it claims that chunk for 24 hours.
 A claimed chunk can only be interacted with by a player wearing a matching banner in their helmet slot.
     *An exception to this rule is made for blocks that can store items, which can be interacted with by anyone.
 TODO: Destroying a banner with a pattern will un-claim the chunk it was in.

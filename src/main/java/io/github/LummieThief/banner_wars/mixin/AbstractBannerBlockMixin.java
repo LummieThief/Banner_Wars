@@ -23,6 +23,7 @@ import java.util.List;
 
 @Mixin(AbstractBannerBlock.class)
 public abstract class AbstractBannerBlockMixin extends BlockWithEntity implements Equipment {
+
     protected AbstractBannerBlockMixin(Settings settings) {
         super(settings);
     }
@@ -36,24 +37,4 @@ public abstract class AbstractBannerBlockMixin extends BlockWithEntity implement
         TerritoryManager.LOGGER.info("broken");
         super.onBreak(world, pos, state, player);
     }
-/*    @Override
-    public void randomDisplayTick(BlockState state, World world, BlockPos pos, Random random) {
-        super.randomDisplayTick(state, world, pos, random);
-        BlockPos targetPos = new BlockPos(20, -23, 148);
-
-        if (((AbstractBannerBlock)(Object)this) instanceof BannerBlock) {
-            world.addParticle(new BlockStateParticleEffect(ParticleTypes.FALLING_DUST, state),
-                    (double)pos.getX() + 0.5,
-                    (double)pos.getY() + 2.0,
-                    (double)pos.getZ() + 0.5,
-                    0, 0, 0);
-        }
-        else {
-            world.addParticle(ParticleTypes.EFFECT,
-                    (double)pos.getX() + 0.5,
-                    (double)pos.getY() + 1.0,
-                    (double)pos.getZ() + 0.5,
-                    0, 0, 0);
-        }
-    }*/
 }

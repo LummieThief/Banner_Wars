@@ -5,6 +5,7 @@
 	"mixins": [
 		"AbstractBannerBlockMixin",
 		"AbstractBlockMixin",
+		"BannerBlockEntityMixin",
 		"BannerBlockMixin",
 		"BlockWithEntityMixin",
 		"BlockItemMixin",

@@ -9,34 +9,27 @@ import net.minecraft.world.World;
 import java.util.*;
 
 // Saves each territory as an object called "territory#", with a field called "banner" and an arbitrary number of
-// fields called "pos#" for each chunk in the territory
+// fields called "pos#" and "epoch#" for each chunk in the territory
 public class ServerState extends PersistentState {
     private static boolean RESET = true;
-
-    public Map<String, Set<Long>> bannerToPositionsMap = new HashMap<>(); // maps from a banner to a set of positions where that banner occurs in the world
-    public Map<Long, String> chunkToBannerMap = new HashMap<>(); // maps from a chunk to the banner that claims it
+    public Map<Long, ChunkData> chunkMap = new HashMap<>();
     @Override
     public NbtCompound writeNbt(NbtCompound nbt) {
         if (RESET) {
             nbt = new NbtCompound();
         }
         else {
-            // loops over every banner pattern in the map
-            int t = 0;
-            for (String banner : bannerToPositionsMap.keySet()) {
-                // gets the list of banner positions in the territory
-                Set<Long> positions = bannerToPositionsMap.get(banner);
-                // copies the banner pattern of the territory and will add to it
-                NbtCompound territory = new NbtCompound();
-                territory.putString("banner", banner);
-                // loops over every chunk in the territory
-                int c = 0;
-                for (long pos : positions) {
-                    territory.putLong("pos" + c, pos);
-                    c++;
-                }
-                nbt.put("territory" + t, territory);
-                t++;
+            int c = 0;
+            for (long chunkCode : chunkMap.keySet()) {
+                NbtCompound chunk = new NbtCompound();
+
+                ChunkData chunkData = chunkMap.get(chunkCode);
+                chunk.putString("banner", chunkData.bannerPattern());
+                chunk.putLong("pos", chunkData.bannerPos());
+                chunk.putInt("epoch", chunkData.epoch());
+
+                nbt.put("chunk" + c, chunk);
+                c++;
             }
         }
         return nbt;
@@ -48,28 +41,11 @@ public class ServerState extends PersistentState {
             state.markDirty();
         }
         else {
-            int t = 0;
-            while (tag.contains("territory" + t)) {
-                NbtCompound territory = tag.getCompound("territory" + t);
-
-                String banner = territory.getString("banner");
-
-                Set<Long> positions = new HashSet<>();
-                int c = 0;
-                while (territory.contains("pos" + c)) {
-                    long pos = territory.getLong("pos" + c);
-                    positions.add(pos);
-                    c++;
-                }
-                state.bannerToPositionsMap.put(banner, positions);
-                t++;
-            }
-
-            for (String banner : state.bannerToPositionsMap.keySet()) {
-                for (long pos : state.bannerToPositionsMap.get(banner)) {
-                    state.chunkToBannerMap.put(TerritoryManager.ConvertBlockEncodingToChunkEncoding(pos), banner);
-                    //state.chunkToBannerMap.put(pos, banner);
-                }
+            state.chunkMap = new HashMap<>();
+            for (int c = 0; tag.contains("chunk" + c); c++) {
+                NbtCompound chunk = tag.getCompound("chunk" + c);
+                ChunkData chunkData = new ChunkData(chunk.getString("bannerPattern"), chunk.getLong("bannerPos"), chunk.getInt("epoch"));
+                state.chunkMap.put(TerritoryManager.ConvertBlockEncodingToChunkEncoding(chunkData.bannerPos()), chunkData);
             }
         }
         return state;
@@ -88,5 +64,6 @@ public class ServerState extends PersistentState {
                 TerritoryManager.MOD_ID);
 
         return state;
+
     }
 }

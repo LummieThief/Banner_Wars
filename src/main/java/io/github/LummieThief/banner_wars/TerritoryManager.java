@@ -1,54 +1,59 @@
 package io.github.LummieThief.banner_wars;
 
+import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
 import net.fabricmc.fabric.api.event.player.PlayerBlockBreakEvents;
 import net.fabricmc.fabric.api.event.player.UseBlockCallback;
 import net.fabricmc.fabric.api.event.player.UseItemCallback;
-import net.fabricmc.fabric.api.object.builder.v1.entity.FabricEntityTypeBuilder;
-import net.minecraft.entity.EntityDimensions;
-import net.minecraft.entity.EntityType;
-import net.minecraft.entity.SpawnGroup;
+import net.minecraft.block.Block;
+import net.minecraft.block.BlockState;
+import net.minecraft.block.Blocks;
+import net.minecraft.block.entity.BannerBlockEntity;
+import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.registry.Registries;
-import net.minecraft.registry.Registry;
-import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.server.world.ServerWorld;
-import net.minecraft.util.Identifier;
-import net.minecraft.util.Pair;
 import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerEntityEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
 import net.minecraft.entity.EquipmentSlot;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
+import net.minecraft.item.Items;
 import net.minecraft.nbt.NbtCompound;
+import net.minecraft.network.packet.s2c.play.BlockUpdateS2CPacket;
+import net.minecraft.server.network.ServerPlayerEntity;
+import net.minecraft.server.world.ServerWorld;
+import net.minecraft.util.BlockRotation;
+import net.minecraft.util.DyeColor;
 import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.hit.HitResult;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.ChunkPos;
-import net.minecraft.util.math.Vec3d;
-import net.minecraft.world.GameMode;
 import net.minecraft.world.World;
-import net.minecraft.world.event.GameEvent;
-import net.minecraft.world.event.PositionSource;
-import net.minecraft.world.event.listener.GameEventListener;
 import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
 
 public class TerritoryManager implements ModInitializer {
     public static final String MOD_ID = "banner_wars";
     public static final Logger LOGGER = LoggerFactory.getLogger(MOD_ID);
     public static ServerState state;
-    public static World world;
+    public static ServerWorld world;
+    public static ServerTickHandler serverTickHandler;
+
+    private static Map<BlockPos, BlockState> decayCache = new HashMap<>();
 
     @Override
     public void onInitialize() {
         ServerLifecycleEvents.SERVER_STARTED.register(server -> {
             state = ServerState.getServerState(server);
             world = server.getOverworld();
+
+            serverTickHandler = new ServerTickHandler(world);
+            ServerTickEvents.START_SERVER_TICK.register(serverTickHandler);
         });
 
         ServerEntityEvents.EQUIPMENT_CHANGE.register((livingEntity, equipmentSlot, previous, next) ->
@@ -63,6 +68,7 @@ public class TerritoryManager implements ModInitializer {
         UseItemCallback.EVENT.register(new UseItemHandler());
 
         PlayerBlockBreakEvents.BEFORE.register(new BreakBlockHandler());
+
     }
 
     /**
@@ -117,14 +123,6 @@ public class TerritoryManager implements ModInitializer {
         return EncodeBlockPosition(chunkPos);
     }
 
-    // Encodes a chunk position into a single long by converting it into a block and encoding the block position.
-    // If belowZero is set, then the Y value of the BlockPos will be -1. Otherwise, it will be 1.
-    public static Long EncodeChunkPosition(ChunkPos chunkPos, boolean belowZero) {
-        int y = belowZero ? -1 : 1;
-        BlockPos pos = new BlockPos(chunkPos.x, y, chunkPos.z);
-        return EncodeBlockPosition(pos);
-    }
-
     // Decodes an encoded block position. If a chunk position is desired, the user is expected to convert the BlockPos
     // into a ChunkPos for the sake of not requiring output parameters.
     public static BlockPos DecodePosition(Long code) {
@@ -141,24 +139,21 @@ public class TerritoryManager implements ModInitializer {
     public static Long ConvertBlockEncodingToChunkEncoding(Long bannerPos) {
         return EncodeChunkPosition(DecodePosition(bannerPos));
     }
-
-    public static String GetBannerInChunk(ChunkPos pos, boolean belowZero) {
-        return state.chunkToBannerMap.get(EncodeChunkPosition(pos, belowZero));
-    }
     public static String GetBannerInChunk(BlockPos pos) {
-        return state.chunkToBannerMap.get(EncodeChunkPosition(pos));
+        ChunkData data = state.chunkMap.get(EncodeChunkPosition(pos));
+        if (data != null) {
+            return data.bannerPattern();
+        }
+        return null;
     }
     public static boolean HasBannerInChunk(BlockPos pos) {
         return GetBannerInChunk(pos) != null;
     }
 
-    public static void AddBannerToChunk(String banner, BlockPos bannerPos) {
+    public static void AddChunk(String banner, BlockPos bannerPos) {
         long chunkCode = EncodeChunkPosition(bannerPos);
         long blockCode = EncodeBlockPosition(bannerPos);
-        Set<Long> set = state.bannerToPositionsMap.getOrDefault(banner, new HashSet<>());
-        set.add(blockCode);
-        state.bannerToPositionsMap.put(banner, set);
-        state.chunkToBannerMap.put(chunkCode, banner);
+        state.chunkMap.put(chunkCode, new ChunkData(banner, blockCode, serverTickHandler.getEpoch()));
         state.markDirty();
     }
 
@@ -192,12 +187,6 @@ public class TerritoryManager implements ModInitializer {
     }
 
     public static BlockHitResult GetPlayerHitResult(PlayerEntity player, boolean includeFluid) {
-        /*float maxDistance = 4.2f;
-        if (player instanceof ServerPlayerEntity) {
-            ServerPlayerEntity serverPlayer = (ServerPlayerEntity) player;
-            if (serverPlayer.interactionManager.getGameMode() != GameMode.SURVIVAL)
-                maxDistance = 4.7f;
-        }*/
         float maxDistance = 5f;
         HitResult hit = player.raycast(maxDistance, 0, includeFluid);
         if (hit.getType() == HitResult.Type.BLOCK) {
@@ -206,5 +195,32 @@ public class TerritoryManager implements ModInitializer {
         else {
             return null;
         }
+    }
+    /*
+    Ideas:
+    remove banner for 1 tick, then replace it the next.
+    replace banner with one of a different color painted the correct color, then replace it the next tick.
+     */
+    public static void ExileBanners(long lastLivingEpoch) {
+        for (ChunkData chunk : state.chunkMap.values()) {
+            if (chunk.epoch() < lastLivingEpoch) {
+                BlockPos bannerPos = DecodePosition(chunk.bannerPos());
+                decayCache.put(bannerPos, world.getBlockState(bannerPos));
+                world.removeBlock(bannerPos, false);
+                //world.setBlockState(bannerPos, Blocks.GRAY_BANNER.getDefaultState());
+            }
+        }
+    }
+
+    public static void ETBBanners(long lastLivingEpoch) {
+        boolean c = false;
+        for (BlockPos pos : decayCache.keySet()) {
+            BlockState blockState = decayCache.get(pos);
+            world.setBlockState(pos, blockState);
+            state.chunkMap.remove(EncodeChunkPosition(pos));
+            c = true;
+        }
+        if (c)
+            decayCache.clear();
     }
 }

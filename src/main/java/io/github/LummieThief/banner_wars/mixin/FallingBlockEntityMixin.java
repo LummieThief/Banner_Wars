@@ -6,6 +6,8 @@ import net.minecraft.block.BlockState;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.FallingBlockEntity;
 import net.minecraft.item.ItemPlacementContext;
+import net.minecraft.nbt.NbtCompound;
+import net.minecraft.nbt.NbtHelper;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
 import org.spongepowered.asm.mixin.Mixin;
@@ -25,12 +27,6 @@ public abstract class FallingBlockEntityMixin implements IFallingBlockEntityMixi
         FallingBlockEntity e = cir.getReturnValue();
         ((IFallingBlockEntityMixin)e).setSpawnPos(pos);
     }
-
-    /*@Inject(method = "tick", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/World;setBlockState(Lnet/minecraft/util/math/BlockPos;Lnet/minecraft/block/BlockState;I)Z"))
-    private void logOnLanding(CallbackInfo ci) {
-        TerritoryManager.LOGGER.info(spawnPos.toString());
-    }*/
-
     @ModifyVariable(method = "tick", at = @At(value = "STORE"), ordinal = 2)
     private boolean OnLanding(boolean oldBool) {
         if (oldBool) {
@@ -45,5 +41,15 @@ public abstract class FallingBlockEntityMixin implements IFallingBlockEntityMixi
     @Override
     public void setSpawnPos(BlockPos pos) {
         spawnPos = pos;
+    }
+
+    @Inject(method = "writeCustomDataToNbt", at = @At("RETURN"))
+    public void writeSpawnPos(NbtCompound nbt, CallbackInfo ci) {
+        nbt.put("spawnPos", NbtHelper.fromBlockPos(spawnPos));
+    }
+
+    @Inject(method = "readCustomDataFromNbt", at = @At("RETURN"))
+    public void readSpawnPos(NbtCompound nbt, CallbackInfo ci) {
+        spawnPos = NbtHelper.toBlockPos(nbt.getCompound("spawnPos"));
     }
 }
