@@ -18,15 +18,11 @@ public class ServerTickHandler implements ServerTickEvents.StartTick {
         time = world.getTime();
         if (time % TICKS_PER_EPOCH == 0) {
             TerritoryManager.LOGGER.info("updating banners: " + (time / TICKS_PER_EPOCH));
-            TerritoryManager.ExileBanners(getEpoch() - CLAIM_LIFETIME);
+            TerritoryManager.FlickerDecayingBanners(getEpoch() - CLAIM_LIFETIME);
 
         }
-        else if (time % TICKS_PER_EPOCH == 1) {
-            //TerritoryManager.LOGGER.info("updating banners: " + (time / TICKS_PER_EPOCH));
-            TerritoryManager.ETBBanners(getEpoch() - CLAIM_LIFETIME);
-
-        }
-
+        else
+            TerritoryManager.ETBBanners();
     }
     public int getEpoch() {
         return (int)(time / TICKS_PER_EPOCH);

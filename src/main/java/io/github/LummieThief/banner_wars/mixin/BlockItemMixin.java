@@ -1,14 +1,13 @@
 package io.github.LummieThief.banner_wars.mixin;
 
 import io.github.LummieThief.banner_wars.TerritoryManager;
+import net.minecraft.block.BannerBlock;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
+import net.minecraft.block.entity.BannerBlockEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.PlayerInventory;
-import net.minecraft.item.BlockItem;
-import net.minecraft.item.ItemPlacementContext;
-import net.minecraft.item.ItemStack;
-import net.minecraft.item.VerticallyAttachableBlockItem;
+import net.minecraft.item.*;
 import net.minecraft.network.packet.s2c.play.BlockUpdateS2CPacket;
 import net.minecraft.network.packet.s2c.play.ScreenHandlerSlotUpdateS2CPacket;
 import net.minecraft.screen.ScreenHandler;
@@ -36,6 +35,11 @@ public class BlockItemMixin {
             String banner = TerritoryManager.BannerToString(stack);
             TerritoryManager.LOGGER.info("adding chunk " + banner);
             TerritoryManager.AddChunk(banner, pos);
+            if (world.getBlockEntity(pos) instanceof BannerBlockEntity entity &&
+                stack.getItem() instanceof BannerItem bannerItem) {
+                TerritoryManager.createFireworkEffect(world, pos.getX() + 0.5, pos.getY() + 1, pos.getZ() + 0.5,
+                        BannerBlockEntity.getPatternsFromNbt(bannerItem.getColor(), BannerBlockEntity.getPatternListNbt(stack)));
+            }
         }
     }
 

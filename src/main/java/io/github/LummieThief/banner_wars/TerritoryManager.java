@@ -1,5 +1,6 @@
 package io.github.LummieThief.banner_wars;
 
+import com.mojang.datafixers.util.Pair;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
 import net.fabricmc.fabric.api.event.player.PlayerBlockBreakEvents;
 import net.fabricmc.fabric.api.event.player.UseBlockCallback;
@@ -8,17 +9,21 @@ import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
 import net.minecraft.block.entity.BannerBlockEntity;
+import net.minecraft.block.entity.BannerPattern;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerEntityEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
 import net.minecraft.entity.EquipmentSlot;
+import net.minecraft.entity.projectile.FireworkRocketEntity;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
 import net.minecraft.nbt.NbtCompound;
+import net.minecraft.nbt.NbtList;
 import net.minecraft.network.packet.s2c.play.BlockUpdateS2CPacket;
+import net.minecraft.registry.entry.RegistryEntry;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.util.BlockRotation;
@@ -32,10 +37,7 @@ import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 public class TerritoryManager implements ModInitializer {
     public static final String MOD_ID = "banner_wars";
@@ -44,7 +46,7 @@ public class TerritoryManager implements ModInitializer {
     public static ServerWorld world;
     public static ServerTickHandler serverTickHandler;
 
-    private static Map<BlockPos, BlockState> decayCache = new HashMap<>();
+    private static Map<BlockPos, BlockEntity> exileCache = new HashMap<>();
 
     @Override
     public void onInitialize() {
@@ -60,9 +62,6 @@ public class TerritoryManager implements ModInitializer {
         {
             if (equipmentSlot != EquipmentSlot.HEAD)
                 return;
-            if (isBanner(next)) {
-                LOGGER.info(next.getNbt() + "");
-            }
         });
         UseBlockCallback.EVENT.register(new UseBlockHandler());
         UseItemCallback.EVENT.register(new UseItemHandler());
@@ -196,31 +195,73 @@ public class TerritoryManager implements ModInitializer {
             return null;
         }
     }
-    /*
-    Ideas:
-    remove banner for 1 tick, then replace it the next.
-    replace banner with one of a different color painted the correct color, then replace it the next tick.
-     */
-    public static void ExileBanners(long lastLivingEpoch) {
+
+    public static void FlickerDecayingBanners(long lastLivingEpoch) {
+        Queue<Long> toRemove = new LinkedList<>();
         for (ChunkData chunk : state.chunkMap.values()) {
             if (chunk.epoch() < lastLivingEpoch) {
                 BlockPos bannerPos = DecodePosition(chunk.bannerPos());
-                decayCache.put(bannerPos, world.getBlockState(bannerPos));
-                world.removeBlock(bannerPos, false);
-                //world.setBlockState(bannerPos, Blocks.GRAY_BANNER.getDefaultState());
+                BlockEntity bannerEntity = new BannerBlockEntity(bannerPos, world.getBlockState(bannerPos));
+                //BlockState state = world.getBlockState(bannerPos);
+                FlickerBanner(bannerPos, bannerEntity);
+                toRemove.add(EncodeChunkPosition(bannerPos));
             }
+        }
+        for(long l : toRemove) {
+            state.chunkMap.remove(l);
         }
     }
 
-    public static void ETBBanners(long lastLivingEpoch) {
+    public static void ETBBanners() {
         boolean c = false;
-        for (BlockPos pos : decayCache.keySet()) {
-            BlockState blockState = decayCache.get(pos);
-            world.setBlockState(pos, blockState);
-            state.chunkMap.remove(EncodeChunkPosition(pos));
+        for (BlockPos pos : exileCache.keySet()) {
+            BlockEntity e = exileCache.get(pos);
+            world.setBlockState(pos, e.getCachedState());
+            world.addBlockEntity(e);
             c = true;
         }
         if (c)
-            decayCache.clear();
+            exileCache.clear();
+    }
+
+    public static void FlickerBanner(BlockPos pos, BlockEntity blockEntity) {
+        exileCache.put(pos, blockEntity);
+        world.removeBlock(pos, false);
+    }
+
+    //TODO: make this not deal damage to the player
+    public static void createFireworkEffect(World world, double x, double y, double z, List<Pair<RegistryEntry<BannerPattern>, DyeColor>> patternList) {
+        DyeColor mainColor = DyeColor.WHITE;
+        if (patternList.size() > 0)
+            mainColor = patternList.get(0).getSecond();
+        Set<DyeColor> uniqueColors = new HashSet<>();
+        for (int i = 0; i < patternList.size(); i++) {
+            uniqueColors.add(patternList.get(i).getSecond());
+        }
+        int m = 2;
+        int[] fireworkColors = new int[uniqueColors.size() + m];
+        for (int i = 0; i < m; i++) {
+            fireworkColors[i] = mainColor.getFireworkColor();
+        }
+        for (DyeColor color : uniqueColors) {
+            fireworkColors[m] = color.getFireworkColor();
+            m++;
+        }
+
+        ItemStack fireworkStack = Items.FIREWORK_ROCKET.getDefaultStack();
+        NbtCompound nbt = new NbtCompound();
+        NbtCompound fireworkNbt = new NbtCompound();
+        NbtList explosions = new NbtList();
+        NbtCompound star = new NbtCompound();
+        star.putIntArray("Colors", fireworkColors);
+        star.putByte("Type", (byte) 0);
+        explosions.add(star);
+        fireworkNbt.put("Explosions", explosions);
+        fireworkNbt.putByte("Flight", (byte) 0);
+        nbt.put("Fireworks", fireworkNbt);
+        fireworkStack.setNbt(nbt);
+        FireworkRocketEntity firework = new FireworkRocketEntity(world, x, y, z, fireworkStack);
+        world.spawnEntity(firework);
+        ((IFireworkRocketEntityMixin)firework).triggerExplosion();
     }
 }
