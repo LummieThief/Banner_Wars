@@ -1,17 +1,22 @@
 package io.github.LummieThief.banner_wars.mixin;
 
+import com.mojang.datafixers.util.Pair;
 import io.github.LummieThief.banner_wars.TerritoryManager;
 import net.minecraft.block.BannerBlock;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
+import net.minecraft.block.WallBannerBlock;
 import net.minecraft.block.entity.BannerBlockEntity;
+import net.minecraft.block.entity.BannerPattern;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.item.*;
 import net.minecraft.network.packet.s2c.play.BlockUpdateS2CPacket;
 import net.minecraft.network.packet.s2c.play.ScreenHandlerSlotUpdateS2CPacket;
+import net.minecraft.registry.entry.RegistryEntry;
 import net.minecraft.screen.ScreenHandler;
 import net.minecraft.server.network.ServerPlayerEntity;
+import net.minecraft.util.DyeColor;
 import net.minecraft.util.Hand;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.ChunkPos;
@@ -20,6 +25,8 @@ import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
+
+import java.util.List;
 
 // If using the item has failed and using the item on the block has failed, then blocks will come here to try one more
 // time to be placed, and it's fairly simple to prevent them. The important part of this step in the process is that it's
@@ -37,8 +44,15 @@ public class BlockItemMixin {
             TerritoryManager.AddChunk(banner, pos);
             if (world.getBlockEntity(pos) instanceof BannerBlockEntity entity &&
                 stack.getItem() instanceof BannerItem bannerItem) {
-                TerritoryManager.createFireworkEffect(world, pos.getX() + 0.5, pos.getY() + 1, pos.getZ() + 0.5,
-                        BannerBlockEntity.getPatternsFromNbt(bannerItem.getColor(), BannerBlockEntity.getPatternListNbt(stack)));
+                List<Pair<RegistryEntry<BannerPattern>, DyeColor>> patterns =
+                        BannerBlockEntity.getPatternsFromNbt(bannerItem.getColor(), BannerBlockEntity.getPatternListNbt(stack));
+                if (entity.getCachedState().getBlock() instanceof WallBannerBlock) {
+                    TerritoryManager.createFireworkEffect(world, pos.getX() + 0.5, pos.getY() + 0.3, pos.getZ() + 0.5, patterns);
+                }
+                else {
+                    TerritoryManager.createFireworkEffect(world, pos.getX() + 0.5, pos.getY() + 1, pos.getZ() + 0.5, patterns);
+                }
+
             }
         }
     }
@@ -66,9 +80,7 @@ public class BlockItemMixin {
             BlockPos pos = context.getBlockPos();
             serverPlayer.networkHandler.sendPacket(new BlockUpdateS2CPacket(pos, world.getBlockState(pos)));
             world.updateListeners(pos, world.getBlockState(pos), world.getBlockState(pos), Block.NOTIFY_LISTENERS);
-            TerritoryManager.LOGGER.info("BlockItemMixin: fail");
             cir.setReturnValue(false);
         }
-        TerritoryManager.LOGGER.info("BlockItemMixin: pass");
     }
 }

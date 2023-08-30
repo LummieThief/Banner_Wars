@@ -4,8 +4,6 @@
 	"compatibilityLevel": "JAVA_17",
 	"mixins": [
 		"AbstractBannerBlockMixin",
-		"AbstractBlockMixin",
-		"BannerBlockEntityMixin",
 		"BannerBlockMixin",
 		"BlockWithEntityMixin",
 		"BlockItemMixin",

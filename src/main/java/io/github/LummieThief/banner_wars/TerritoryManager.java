@@ -5,6 +5,7 @@ import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
 import net.fabricmc.fabric.api.event.player.PlayerBlockBreakEvents;
 import net.fabricmc.fabric.api.event.player.UseBlockCallback;
 import net.fabricmc.fabric.api.event.player.UseItemCallback;
+import net.minecraft.block.AbstractBannerBlock;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
@@ -145,6 +146,13 @@ public class TerritoryManager implements ModInitializer {
         }
         return null;
     }
+    public static BlockPos GetBannerPosInChunk(BlockPos pos) {
+        ChunkData data = state.chunkMap.get(EncodeChunkPosition(pos));
+        if (data != null) {
+            return DecodePosition(data.bannerPos());
+        }
+        return null;
+    }
     public static boolean HasBannerInChunk(BlockPos pos) {
         return GetBannerInChunk(pos) != null;
     }
@@ -196,19 +204,25 @@ public class TerritoryManager implements ModInitializer {
         }
     }
 
+    public static void RemoveChunk(BlockPos pos) {
+        state.chunkMap.remove(EncodeChunkPosition(pos));
+    }
+
     public static void FlickerDecayingBanners(long lastLivingEpoch) {
-        Queue<Long> toRemove = new LinkedList<>();
+        Queue<BlockPos> toRemove = new LinkedList<>();
         for (ChunkData chunk : state.chunkMap.values()) {
             if (chunk.epoch() < lastLivingEpoch) {
                 BlockPos bannerPos = DecodePosition(chunk.bannerPos());
-                BlockEntity bannerEntity = new BannerBlockEntity(bannerPos, world.getBlockState(bannerPos));
-                //BlockState state = world.getBlockState(bannerPos);
-                FlickerBanner(bannerPos, bannerEntity);
-                toRemove.add(EncodeChunkPosition(bannerPos));
+                toRemove.add(bannerPos);
+                BlockState bannerState = world.getBlockState(bannerPos);
+                if (bannerState.getBlock() instanceof AbstractBannerBlock) {
+                    BlockEntity bannerEntity = new BannerBlockEntity(bannerPos, bannerState);
+                    FlickerBanner(bannerPos, bannerEntity);
+                }
             }
         }
-        for(long l : toRemove) {
-            state.chunkMap.remove(l);
+        for(BlockPos pos : toRemove) {
+            RemoveChunk(pos);
         }
     }
 

@@ -1,6 +1,6 @@
 ---BASICS---
-Banners will not require a supporting block.
 Banners that are broken will lose their pattern.
+Banners will only be able to be broken by being mined.
 Banners with a pattern can be equipped in the helmet slot.
 A banner with a pattern can only be placed by a player wearing a matching banner in their helmet slot.
 When a banner with a pattern is placed in a chunk, it claims that chunk for 24 hours.

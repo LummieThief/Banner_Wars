@@ -25,7 +25,6 @@ public class UseItemHandler implements UseItemCallback {
         if (!(player instanceof ServerPlayerEntity) || world.isClient) {
             return TypedActionResult.pass(handItem);
         }
-        TerritoryManager.LOGGER.info("UseItemHandler: head");
         Item item = handItem.getItem();
 
         // We only want to block buckets here

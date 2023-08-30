@@ -37,7 +37,6 @@ public class UseBlockHandler implements UseBlockCallback {
             BlockEntity be = world.getBlockEntity(hitResult.getBlockPos());
             // check if they are trying to open a container, and if they are then let it pass
             if (be instanceof LockableContainerBlockEntity && !player.isSneaking()) {
-                TerritoryManager.LOGGER.info("UseBlock: override fail");
                 return ActionResult.PASS;
             }
             // otherwise, they truly don't have permission
@@ -50,11 +49,9 @@ public class UseBlockHandler implements UseBlockCallback {
                         screenHandler.getRevision(),
                         slot,
                         player.getStackInHand(hand)));
-                TerritoryManager.LOGGER.info("UseBlock: fail");
                 return ActionResult.FAIL;
             }
         }
-        TerritoryManager.LOGGER.info("UseBlock: pass");
         return ActionResult.PASS;
     }
 }
