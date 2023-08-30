@@ -2,6 +2,7 @@ package io.github.LummieThief.banner_wars.mixin;
 
 import com.mojang.authlib.GameProfile;
 import io.github.LummieThief.banner_wars.TerritoryManager;
+import net.minecraft.entity.EquipmentSlot;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.inventory.Inventory;

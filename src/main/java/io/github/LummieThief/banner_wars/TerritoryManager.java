@@ -5,6 +5,7 @@ import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
 import net.fabricmc.fabric.api.event.player.PlayerBlockBreakEvents;
 import net.fabricmc.fabric.api.event.player.UseBlockCallback;
 import net.fabricmc.fabric.api.event.player.UseItemCallback;
+import net.fabricmc.fabric.api.util.NbtType;
 import net.minecraft.block.AbstractBannerBlock;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
@@ -22,6 +23,7 @@ import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
 import net.minecraft.nbt.NbtCompound;
+import net.minecraft.nbt.NbtElement;
 import net.minecraft.nbt.NbtList;
 import net.minecraft.network.packet.s2c.play.BlockUpdateS2CPacket;
 import net.minecraft.registry.entry.RegistryEntry;
@@ -59,11 +61,12 @@ public class TerritoryManager implements ModInitializer {
             ServerTickEvents.START_SERVER_TICK.register(serverTickHandler);
         });
 
-        ServerEntityEvents.EQUIPMENT_CHANGE.register((livingEntity, equipmentSlot, previous, next) ->
+/*        ServerEntityEvents.EQUIPMENT_CHANGE.register((livingEntity, equipmentSlot, previous, next) ->
         {
             if (equipmentSlot != EquipmentSlot.HEAD)
                 return;
-        });
+            LOGGER.info("banner in head slot has pattern? " + HasPattern(next));
+        });*/
         UseBlockCallback.EVENT.register(new UseBlockHandler());
         UseItemCallback.EVENT.register(new UseItemHandler());
 
@@ -88,7 +91,7 @@ public class TerritoryManager implements ModInitializer {
             return "";
         String s = Item.getRawId(bannerStack.getItem()) + "";
         NbtCompound nbt = bannerStack.getNbt();
-        if (nbt != null) {
+        if (nbt != null && !nbt.isEmpty()) {
             s += nbt.toString();
             s = s.substring(0, s.lastIndexOf(']'));
         }
@@ -193,6 +196,19 @@ public class TerritoryManager implements ModInitializer {
         return destBanner.equals(sourceBanner);
     }
 
+    public static boolean HasPattern(ItemStack bannerItem) {
+        NbtCompound comp = bannerItem.getOrCreateNbt();
+        LOGGER.info(comp.toString());
+        NbtCompound blockEntityTag = comp.getCompound("BlockEntityTag");
+        if (blockEntityTag == null)
+            return false;
+        NbtList list = blockEntityTag.getList("Patterns", NbtElement.COMPOUND_TYPE);
+        for (NbtElement c : list) {
+            return true;
+        }
+        return false;
+    }
+
     public static BlockHitResult GetPlayerHitResult(PlayerEntity player, boolean includeFluid) {
         float maxDistance = 5f;
         HitResult hit = player.raycast(maxDistance, 0, includeFluid);
@@ -243,7 +259,6 @@ public class TerritoryManager implements ModInitializer {
         world.removeBlock(pos, false);
     }
 
-    //TODO: make this not deal damage to the player
     public static void createFireworkEffect(World world, double x, double y, double z, List<Pair<RegistryEntry<BannerPattern>, DyeColor>> patternList) {
         DyeColor mainColor = DyeColor.WHITE;
         if (patternList.size() > 0)

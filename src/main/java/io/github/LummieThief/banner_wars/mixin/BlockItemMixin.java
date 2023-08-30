@@ -38,7 +38,7 @@ public class BlockItemMixin {
         if (world.isClient)
             return;
         String existingBanner = TerritoryManager.GetBannerInChunk(pos);
-        if (existingBanner == null && TerritoryManager.isBanner(stack)) {
+        if (existingBanner == null && TerritoryManager.isBanner(stack) && TerritoryManager.HasPattern(stack)) {
             String banner = TerritoryManager.BannerToString(stack);
             TerritoryManager.LOGGER.info("adding chunk " + banner);
             TerritoryManager.AddChunk(banner, pos);

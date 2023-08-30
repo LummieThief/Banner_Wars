@@ -47,7 +47,9 @@ public abstract class ItemStackMixin {
         boolean territorialPermission = TerritoryManager.HasPermission(context.getPlayer(), context.getBlockPos());
         boolean personalPermission = !TerritoryManager.isBanner(stack) ||
                 (TerritoryManager.BannerToString(stack).equals(TerritoryManager.BannerToString(context.getPlayer().getInventory().getArmorStack(3))) &&
-                        !TerritoryManager.HasBannerInChunk(context.getBlockPos()));
+                        !TerritoryManager.HasBannerInChunk(context.getBlockPos()) ||
+                        !TerritoryManager.HasPattern(stack));
+
 
         if (territorialPermission && personalPermission) {
             TerritoryManager.LOGGER.info("ItemStackMixin: pass");

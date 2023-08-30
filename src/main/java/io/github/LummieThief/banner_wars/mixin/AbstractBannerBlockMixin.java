@@ -7,13 +7,12 @@ import net.minecraft.block.*;
 import net.minecraft.block.entity.BannerBlockEntity;
 import net.minecraft.block.entity.BannerPattern;
 import net.minecraft.block.entity.BlockEntity;
+import net.minecraft.enchantment.EnchantmentHelper;
 import net.minecraft.entity.EquipmentSlot;
+import net.minecraft.entity.mob.MobEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.projectile.FireworkRocketEntity;
-import net.minecraft.item.BannerItem;
-import net.minecraft.item.Equipment;
-import net.minecraft.item.ItemStack;
-import net.minecraft.item.Items;
+import net.minecraft.item.*;
 import net.minecraft.loot.LootTable;
 import net.minecraft.loot.LootTables;
 import net.minecraft.loot.context.LootContextParameterSet;
@@ -27,10 +26,8 @@ import net.minecraft.registry.Registries;
 import net.minecraft.registry.Registry;
 import net.minecraft.registry.entry.RegistryEntry;
 import net.minecraft.server.world.ServerWorld;
-import net.minecraft.util.ActionResult;
-import net.minecraft.util.DyeColor;
-import net.minecraft.util.Hand;
-import net.minecraft.util.Identifier;
+import net.minecraft.stat.Stats;
+import net.minecraft.util.*;
 import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Vec3d;
@@ -57,13 +54,14 @@ public abstract class AbstractBannerBlockMixin extends BlockWithEntity implement
     public EquipmentSlot getSlotType() {
         return EquipmentSlot.HEAD;
     }
+
     @Override
     public ActionResult onUse(BlockState state, World world, BlockPos pos, PlayerEntity player, Hand hand, BlockHitResult hit) {
         if (world.isClient || hand.equals(Hand.OFF_HAND))
             return ActionResult.PASS;
         ItemStack headStack = player.getInventory().getArmorStack(3);
         // check that the player has a banner equipped and they have permission to claim
-        if (headStack != null && TerritoryManager.isBanner(headStack) && TerritoryManager.HasPermission(player, pos)) {
+        if (headStack != null && TerritoryManager.isBanner(headStack) && TerritoryManager.HasPattern(headStack) && TerritoryManager.HasPermission(player, pos)) {
             // If the chunk is already claimed, the player is only allowed to re-upkeep it.
             if (TerritoryManager.HasBannerInChunk(pos) && !TerritoryManager.GetBannerPosInChunk(pos).equals(pos)) {
                 return ActionResult.FAIL;
