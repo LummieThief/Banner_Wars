@@ -21,14 +21,13 @@ public class EntityMixin {
         if (t instanceof HostileEntity || t instanceof PlayerEntity)
             return;
         BlockPos pos = t.getBlockPos();
-        if (damageSource.getAttacker() instanceof ServerPlayerEntity)
+        if (damageSource.getAttacker() instanceof ServerPlayerEntity attacker)
         {
-            ServerPlayerEntity attacker = (ServerPlayerEntity)damageSource.getAttacker();
             if (!TerritoryManager.HasPermission(attacker, pos)) {
                 cir.setReturnValue(true);
             }
         }
-        else if (TerritoryManager.HasBannerInChunk(pos)) {
+        else if (TerritoryManager.HasBannerInChunk(pos) && !TerritoryManager.InDecay(null, TerritoryManager.GetBannerInChunk(pos))) {
             cir.setReturnValue(true);
         }
     }

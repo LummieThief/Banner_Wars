@@ -22,25 +22,18 @@ public class PistonHandlerMixin {
 
     @Inject(method = "calculatePush", at = @At(value="RETURN"), cancellable = true)
     private void overrideTryMove(CallbackInfoReturnable<Boolean> cir) {
-        // get the banner that the piston block is in
-        String pistonBanner = TerritoryManager.GetBannerInChunk(posFrom);
-        String toBanner, fromBanner;
-
-        // check if the block directly in front of the piston is in a different claim
-        toBanner = TerritoryManager.GetBannerInChunk(posTo);
-        if (toBanner != null && !toBanner.equals(pistonBanner)) {
+        // Checks if the piston has permission to interact with the block directly in front of it.
+        BlockPos pistonFrom = posFrom;
+        BlockPos pistonTo = posTo;
+        if (!TerritoryManager.HasPermission(pistonFrom, pistonTo)) {
             cir.setReturnValue(false);
         }
         else {
             // loop over all the blocks that will be moved by the piston
-            for (BlockPos pos : movedBlocks) {
-                BlockPos toPos = pos.add(motionDirection.getVector());
-                // get the banner of the chunk the block is currently in and the chunk the block will be pushed into
-                toBanner = TerritoryManager.GetBannerInChunk(toPos);
-                fromBanner = TerritoryManager.GetBannerInChunk(pos);
-                // check if either of those blocks are in a different claim than the piston
-                if ((toBanner != null && !toBanner.equals(pistonBanner)) ||
-                        (fromBanner != null && !fromBanner.equals(pistonBanner))) {
+            for (BlockPos blockFrom : movedBlocks) {
+                BlockPos blockTo = blockFrom.add(motionDirection.getVector());
+                // checks if all of those blocks are in a chunk the piston can interact with and will be moving into a chunk the piston can interact with
+                if (!TerritoryManager.HasPermission(pistonFrom, blockTo) || !TerritoryManager.HasPermission(pistonFrom, blockFrom)) {
                     cir.setReturnValue(false);
                     break;
                 }

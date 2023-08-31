@@ -19,9 +19,11 @@ public class ExplosionMixin {
             locals = LocalCapture.CAPTURE_FAILHARD)
     public void captureSet(CallbackInfo ci, Set<BlockPos> set) {
         Iterator<BlockPos> itr = set.iterator();
+        String banner;
         while (itr.hasNext()) {
             BlockPos pos = itr.next();
-            if (TerritoryManager.HasBannerInChunk(pos)) {
+            banner = TerritoryManager.GetBannerInChunk(pos);
+            if (banner != null && !TerritoryManager.InDecay(pos, banner)) {
                 itr.remove();
             }
         }

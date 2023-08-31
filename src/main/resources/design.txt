@@ -10,25 +10,26 @@ A banner placed at or above y=0 will claim the chunk from y=0 to sky limit, and 
 TODO: Chunks in the Nether and End cannot be claimed.
 Destroying a banner with a pattern will un-claim the chunk it was in.
 When a claim's timer reaches 0, the banner that claimed it loses its pattern and the chunk becomes unclaimed.
-Right-clicking a banner with a brush has the following effects:
+TODO: Right-clicking a banner with a brush has the following effects:
     1. If the clicked banner has a pattern and the player who clicked it is wearing a matching banner in their helmet slot:
         The clicked banner's claim timer is refreshed to 24 hours (and the brush loses durability).
     2. If the clicked banner has no pattern, the player who clicked it is wearing a banner, and the chunk containing the clicked banner is not already claimed:
         The clicked banner turns into the banner the player is wearing on their head, and it claims the chunk for 24 hours (and the brush loses durability).
+While a player is standing in a chunk claimed by the banner they are wearing in their helmet slot, they get Haste 1.
+While a player is standing in a chunk claimed by a banner they are not wearing in their helmet slot, they get Mining Fatigue 1.
 
 ---COMBAT---
 When a player dies while wearing a banner, the banner will remain on their head through death.
-TODO: When a player is killed by another player, if the killed player is wearing a banner, all chunks claimed by that banner enter decay for 15 minutes.
-TODO: When a banner item is burned, all chunks claimed by that banner enter decay for 15 minutes.
-TODO: While a chunk is in decay, none of its regular protections apply (except for the banner that claims the chunk, which remains protected).
-TODO: While a chunk is in decay, any events that would cause it to enter decay again have no effect.
-TODO: When a chunk exits decay, it will be unable to enter decay again for 15 minutes.
+When a player is killed by another player, if the slain player is wearing a banner, all chunks claimed by that banner enter decay for 15 minutes.
+While a chunk is in decay, none of its regular protections apply (except for the banner that claims the chunk, which remains protected).
+While a chunk is in decay, any events that would cause it to enter decay again have no effect.
+When a chunk exits decay, it will be unable to enter decay again for 15 minutes.
 
 --MAYBE--
-Banners cannot be put inside Ender Chests.
 When a player logs off the server while in combat with a player, if the fleeing player is wearing a banner, all chunks claimed by that banner enter decay for 15 minutes.
-While a player is standing in a chunk claimed by the banner they are wearing in their helmet slot, they get Haste 1.
-While a player is standing in a chunk claimed by a banner they are not wearing in their helmet slot, they get Mining Fatigue 1.
 EITHER: When in the overworld, Fireworks cannot be used to power an Elytra
     OR: When in the overworld, players can only use fireworks to power an Elytra while inside a chunk claimed by the banner they are wearing in their helmet slot.
     OR: Being damaged prevents the use of the Elytra until out of combat.
+    OR: Right-clicking a player with shears instantly breaks their Elytra
+When a banner item is burned, all chunks claimed by that banner enter decay for 15 minutes.
+A banner equipped on a players head can only be unequipped by pressing Q, and the item entity it creates cannot be

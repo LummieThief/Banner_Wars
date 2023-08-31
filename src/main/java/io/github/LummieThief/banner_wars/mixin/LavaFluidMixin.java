@@ -23,9 +23,7 @@ public class LavaFluidMixin {
         if (TerritoryManager.HasPermission(lavaPos, pos)) {
             return world.setBlockState(pos, state);
         }
-        else {
-            return false;
-        }
+        return false;
     }
 
 }

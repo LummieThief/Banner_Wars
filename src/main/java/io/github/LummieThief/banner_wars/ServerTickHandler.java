@@ -5,8 +5,9 @@ import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.world.ServerWorld;
 
 public class ServerTickHandler implements ServerTickEvents.StartTick {
-    private static final int TICKS_PER_EPOCH = 100;
-    private static final int CLAIM_LIFETIME = 2;
+    private static final int TICKS_PER_EPOCH = 100; // 12 ticks/minute
+    private static final int CLAIM_LIFETIME = 17280; // 24 hours * 60 minutes * 12 ticks/minute
+    private static final int DECAY_TIME = 180; // 15 minutes * 12 ticks/minute
     private ServerWorld world;
     private long time;
 
@@ -17,9 +18,9 @@ public class ServerTickHandler implements ServerTickEvents.StartTick {
     public void onStartTick(MinecraftServer server) {
         time = world.getTime();
         if (time % TICKS_PER_EPOCH == 0) {
-            TerritoryManager.LOGGER.info("updating banners: " + (time / TICKS_PER_EPOCH));
-            TerritoryManager.FlickerDecayingBanners(getEpoch() - CLAIM_LIFETIME);
-
+            TerritoryManager.LOGGER.info("ServerTick: " + (time / TICKS_PER_EPOCH));
+            TerritoryManager.FlickerFadingBanners(getEpoch() - CLAIM_LIFETIME);
+            TerritoryManager.UnDecayBanners(getEpoch() - DECAY_TIME, getEpoch() - DECAY_TIME * 2);
         }
         else
             TerritoryManager.ETBBanners();

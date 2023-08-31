@@ -13,6 +13,7 @@ import java.util.*;
 public class ServerState extends PersistentState {
     private static boolean RESET = true;
     public Map<Long, ChunkData> chunkMap = new HashMap<>();
+    public Map<String, DecayData> decayMap = new HashMap<>();
     @Override
     public NbtCompound writeNbt(NbtCompound nbt) {
         if (RESET) {

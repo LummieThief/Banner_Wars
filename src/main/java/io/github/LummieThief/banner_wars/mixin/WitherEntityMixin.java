@@ -23,7 +23,7 @@ public class WitherEntityMixin {
             at = @At(value = "INVOKE", target = "Lnet/minecraft/world/World;getBlockState(Lnet/minecraft/util/math/BlockPos;)Lnet/minecraft/block/BlockState;")
     )
     private BlockState injected(World instance, BlockPos pos) {
-        if (TerritoryManager.HasBannerInChunk(pos)) {
+        if (TerritoryManager.HasBannerInChunk(pos) && !TerritoryManager.InDecay(pos, TerritoryManager.GetBannerInChunk(pos))) {
             return instance.getBlockState(new BlockPos(0, -64, 0));
         }
         else {

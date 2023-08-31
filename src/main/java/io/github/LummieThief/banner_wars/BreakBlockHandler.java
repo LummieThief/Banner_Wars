@@ -20,13 +20,10 @@ public class BreakBlockHandler implements PlayerBlockBreakEvents.Before{
     public boolean beforeBlockBreak(World world, PlayerEntity player, BlockPos pos, BlockState state, @Nullable BlockEntity blockEntity) {
         if (!(player instanceof ServerPlayerEntity) || world.isClient)
             return true;
-        ServerPlayerEntity serverPlayer = (ServerPlayerEntity) player;
         boolean hasPermission = TerritoryManager.HasPermission(player, pos);
-        BlockState worldState = world.getBlockState(pos);
         Block block = state.getBlock();
         Item item = block.asItem();
         if (!hasPermission && item instanceof VerticallyAttachableBlockItem) {
-            TerritoryManager.LOGGER.info("scheduling");
             world.scheduleBlockTick(pos, state.getBlock(), 10);
         }
         return hasPermission;

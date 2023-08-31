@@ -27,8 +27,8 @@ public class SpongeBlockMixin {
     @Shadow @Final private static final Direction[] field_43257 = Direction.values();
 
     /**
-     * @author Joseph Cook
-     * @reason I'm currently unaware of any other way to inject into a lamba, and all the sponge logic occurs in a lambda
+     * @author LummieThief
+     * @reason I'm currently unaware of any other way to inject into a lambda, and all the sponge logic occurs in a lambda
      */
     @Overwrite
     private boolean absorbWater(World world, BlockPos pos) {

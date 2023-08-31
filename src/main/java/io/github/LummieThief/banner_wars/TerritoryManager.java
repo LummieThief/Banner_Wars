@@ -1,5 +1,7 @@
 package io.github.LummieThief.banner_wars;
 
+import com.mojang.brigadier.LiteralMessage;
+import com.mojang.brigadier.Message;
 import com.mojang.datafixers.util.Pair;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
 import net.fabricmc.fabric.api.event.player.PlayerBlockBreakEvents;
@@ -25,10 +27,14 @@ import net.minecraft.item.Items;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.nbt.NbtElement;
 import net.minecraft.nbt.NbtList;
+import net.minecraft.network.message.MessageType;
 import net.minecraft.network.packet.s2c.play.BlockUpdateS2CPacket;
 import net.minecraft.registry.entry.RegistryEntry;
+import net.minecraft.server.MinecraftServer;
+import net.minecraft.server.PlayerManager;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
+import net.minecraft.text.*;
 import net.minecraft.util.BlockRotation;
 import net.minecraft.util.DyeColor;
 import net.minecraft.util.hit.BlockHitResult;
@@ -45,15 +51,18 @@ import java.util.*;
 public class TerritoryManager implements ModInitializer {
     public static final String MOD_ID = "banner_wars";
     public static final Logger LOGGER = LoggerFactory.getLogger(MOD_ID);
+    public static MinecraftServer server;
     public static ServerState state;
     public static ServerWorld world;
     public static ServerTickHandler serverTickHandler;
 
-    private static Map<BlockPos, BlockEntity> exileCache = new HashMap<>();
+    private static final Map<BlockPos, BlockEntity> exileCache = new HashMap<>();
+    private static long lastDecayedEpoch;
 
     @Override
     public void onInitialize() {
-        ServerLifecycleEvents.SERVER_STARTED.register(server -> {
+        ServerLifecycleEvents.SERVER_STARTED.register(srvr -> {
+            server = srvr;
             state = ServerState.getServerState(server);
             world = server.getOverworld();
 
@@ -61,12 +70,11 @@ public class TerritoryManager implements ModInitializer {
             ServerTickEvents.START_SERVER_TICK.register(serverTickHandler);
         });
 
-/*        ServerEntityEvents.EQUIPMENT_CHANGE.register((livingEntity, equipmentSlot, previous, next) ->
+        ServerEntityEvents.EQUIPMENT_CHANGE.register((livingEntity, equipmentSlot, previous, next) ->
         {
             if (equipmentSlot != EquipmentSlot.HEAD)
                 return;
-            LOGGER.info("banner in head slot has pattern? " + HasPattern(next));
-        });*/
+        });
         UseBlockCallback.EVENT.register(new UseBlockHandler());
         UseItemCallback.EVENT.register(new UseItemHandler());
 
@@ -182,9 +190,8 @@ public class TerritoryManager implements ModInitializer {
                 return true;
             }
         }
-
         // player's banner did not match
-        return false;
+        return InDecay(pos, banner);
     }
 
     public static boolean HasPermission(BlockPos source, BlockPos dest) {
@@ -193,7 +200,17 @@ public class TerritoryManager implements ModInitializer {
             return true;
         }
         String sourceBanner = TerritoryManager.GetBannerInChunk(source);
-        return destBanner.equals(sourceBanner);
+        return destBanner.equals(sourceBanner) || InDecay(dest, destBanner);
+    }
+    public static boolean InDecay(BlockPos pos, String banner) {
+        DecayData data = state.decayMap.get(banner);
+        // if there's no entry in the decay map, this chunk isn't in decay
+        if (data == null) {
+            return false;
+        }
+        // otherwise, this chunk is in decay if the epoch is greater or equal to than the last decay epoch
+        // and the position of the block queried is not the position of the banner that claims the chunk.
+        return data.epoch() >= lastDecayedEpoch && (pos == null || !pos.equals(GetBannerPosInChunk(pos)));
     }
 
     public static boolean HasPattern(ItemStack bannerItem) {
@@ -224,7 +241,7 @@ public class TerritoryManager implements ModInitializer {
         state.chunkMap.remove(EncodeChunkPosition(pos));
     }
 
-    public static void FlickerDecayingBanners(long lastLivingEpoch) {
+    public static void FlickerFadingBanners(long lastLivingEpoch) {
         Queue<BlockPos> toRemove = new LinkedList<>();
         for (ChunkData chunk : state.chunkMap.values()) {
             if (chunk.epoch() < lastLivingEpoch) {
@@ -257,6 +274,37 @@ public class TerritoryManager implements ModInitializer {
     public static void FlickerBanner(BlockPos pos, BlockEntity blockEntity) {
         exileCache.put(pos, blockEntity);
         world.removeBlock(pos, false);
+    }
+
+    public static void DecayBanner(String banner, String name) {
+        if (!state.decayMap.containsKey(banner)) {
+            state.decayMap.put(banner, new DecayData(serverTickHandler.getEpoch(), name));
+            String cmd = String.format("/tellraw @a [{\"text\":\"[Server] \"},{\"text\":\"%s\",\"color\":\"light_purple\"}," +
+                    "{\"text\":\"'s territory has entered decay for 15 minutes! \",\"color\":\"aqua\"}]", name);
+            ExecuteCommand(cmd);
+        }
+    }
+
+    public static void UnDecayBanners(long lastDecayedEpoch, long lastDecayProtectionEpoch) {
+        TerritoryManager.lastDecayedEpoch = lastDecayedEpoch;
+        for (String banner : state.decayMap.keySet()) {
+            DecayData data = state.decayMap.get(banner);
+            if (data.epoch() < lastDecayProtectionEpoch) {
+                state.decayMap.remove(banner);
+                String cmd = String.format("/tellraw @a [{\"text\":\"[Server] \"},{\"text\":\"%s\",\"color\":\"light_purple\"}," +
+                        "{\"text\":\"'s territory is no longer protected from decay. \",\"color\":\"aqua\"}]", data.name());
+                ExecuteCommand(cmd);
+            }
+            else if (data.epoch() == lastDecayedEpoch - 1) {
+                String cmd = String.format("/tellraw @a [{\"text\":\"[Server] \"},{\"text\":\"%s\",\"color\":\"light_purple\"}," +
+                        "{\"text\":\"'s territory is now protected from decay for 15 minutes! \",\"color\":\"aqua\"}]", data.name());
+                ExecuteCommand(cmd);
+            }
+        }
+    }
+
+    private static void ExecuteCommand(String sayCommand) {
+        server.getCommandManager().executeWithPrefix(server.getCommandSource(), sayCommand);
     }
 
     public static void createFireworkEffect(World world, double x, double y, double z, List<Pair<RegistryEntry<BannerPattern>, DyeColor>> patternList) {
