@@ -35,7 +35,7 @@ import java.util.List;
 public class BlockItemMixin {
     @Inject(method = "postPlacement", at = @At("HEAD"))
     protected void overridePostPlacement(BlockPos pos, World world, PlayerEntity player, ItemStack stack, BlockState state, CallbackInfoReturnable<Boolean> cir) {
-        if (world.isClient)
+        if (world.isClient || !world.getRegistryKey().equals(World.OVERWORLD))
             return;
         String existingBanner = TerritoryManager.GetBannerInChunk(pos);
         if (existingBanner == null && TerritoryManager.isBanner(stack) && TerritoryManager.HasPattern(stack)) {
@@ -65,7 +65,7 @@ public class BlockItemMixin {
         Hand hand = context.getHand();
         ItemStack handItem = player.getStackInHand(hand);
         PlayerInventory inventory = player.getInventory();
-        if (cir.getReturnValue() && !TerritoryManager.HasPermission(context.getPlayer(), context.getBlockPos())) {
+        if (cir.getReturnValue() && !TerritoryManager.HasPermission(context.getWorld(), context.getPlayer(), context.getBlockPos())) {
 
             ServerPlayerEntity serverPlayer = (ServerPlayerEntity)player;
             World world = context.getWorld();

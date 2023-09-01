@@ -23,7 +23,6 @@ import static net.minecraft.block.Block.dropStacks;
 
 @Mixin(SpongeBlock.class)
 public class SpongeBlockMixin {
-
     @Shadow @Final private static final Direction[] field_43257 = Direction.values();
 
     /**
@@ -53,20 +52,20 @@ public class SpongeBlockMixin {
                     Block block = blockState.getBlock();
                     if (block instanceof FluidDrainable) {
                         FluidDrainable fluidDrainable = (FluidDrainable)block;
-                        if (TerritoryManager.HasPermission(pos, currentPos) && !fluidDrainable.tryDrainFluid(world, currentPos, blockState).isEmpty()) {
+                        if (TerritoryManager.HasPermission(world, pos, currentPos) && !fluidDrainable.tryDrainFluid(world, currentPos, blockState).isEmpty()) {
                             return true;
                         }
                     }
 
                     if (blockState.getBlock() instanceof FluidBlock) {
-                        if (TerritoryManager.HasPermission(pos, currentPos))
+                        if (TerritoryManager.HasPermission(world, pos, currentPos))
                             world.setBlockState(currentPos, Blocks.AIR.getDefaultState(), 3);
                     } else {
                         if (!blockState.isOf(Blocks.KELP) && !blockState.isOf(Blocks.KELP_PLANT) && !blockState.isOf(Blocks.SEAGRASS) && !blockState.isOf(Blocks.TALL_SEAGRASS)) {
                             return false;
                         }
 
-                        if (TerritoryManager.HasPermission(pos, currentPos)) {
+                        if (TerritoryManager.HasPermission(world, pos, currentPos)) {
                             BlockEntity blockEntity = blockState.hasBlockEntity() ? world.getBlockEntity(currentPos) : null;
                             dropStacks(blockState, world, currentPos, blockEntity);
                             world.setBlockState(currentPos, Blocks.AIR.getDefaultState(), 3);

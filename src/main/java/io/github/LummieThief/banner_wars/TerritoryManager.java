@@ -53,7 +53,7 @@ public class TerritoryManager implements ModInitializer {
     public static final Logger LOGGER = LoggerFactory.getLogger(MOD_ID);
     public static MinecraftServer server;
     public static ServerState state;
-    public static ServerWorld world;
+    public static ServerWorld overworld;
     public static ServerTickHandler serverTickHandler;
 
     private static final Map<BlockPos, BlockEntity> exileCache = new HashMap<>();
@@ -64,17 +64,17 @@ public class TerritoryManager implements ModInitializer {
         ServerLifecycleEvents.SERVER_STARTED.register(srvr -> {
             server = srvr;
             state = ServerState.getServerState(server);
-            world = server.getOverworld();
+            overworld = server.getOverworld();
 
-            serverTickHandler = new ServerTickHandler(world);
+            serverTickHandler = new ServerTickHandler();
             ServerTickEvents.START_SERVER_TICK.register(serverTickHandler);
         });
 
-        ServerEntityEvents.EQUIPMENT_CHANGE.register((livingEntity, equipmentSlot, previous, next) ->
+/*        ServerEntityEvents.EQUIPMENT_CHANGE.register((livingEntity, equipmentSlot, previous, next) ->
         {
             if (equipmentSlot != EquipmentSlot.HEAD)
                 return;
-        });
+        });*/
         UseBlockCallback.EVENT.register(new UseBlockHandler());
         UseItemCallback.EVENT.register(new UseItemHandler());
 
@@ -175,7 +175,7 @@ public class TerritoryManager implements ModInitializer {
         state.markDirty();
     }
 
-    public static boolean HasPermission(PlayerEntity player, BlockPos pos) {
+    public static boolean HasPermission(World world, PlayerEntity player, BlockPos pos) {
         String banner = TerritoryManager.GetBannerInChunk(pos);
         if (banner == null) {
             // chunk is unclaimed, so player has permission
@@ -191,18 +191,21 @@ public class TerritoryManager implements ModInitializer {
             }
         }
         // player's banner did not match
-        return InDecay(pos, banner);
+        return InDecay(world, pos, banner);
     }
 
-    public static boolean HasPermission(BlockPos source, BlockPos dest) {
+    public static boolean HasPermission(World world, BlockPos source, BlockPos dest) {
         String destBanner = TerritoryManager.GetBannerInChunk(dest);
         if (destBanner == null) {
             return true;
         }
         String sourceBanner = TerritoryManager.GetBannerInChunk(source);
-        return destBanner.equals(sourceBanner) || InDecay(dest, destBanner);
+        return destBanner.equals(sourceBanner) || InDecay(world, dest, destBanner);
     }
-    public static boolean InDecay(BlockPos pos, String banner) {
+    public static boolean InDecay(World world, BlockPos pos, String banner) {
+        if (world.isClient || !world.getRegistryKey().equals(World.OVERWORLD)) {
+            return true;
+        }
         DecayData data = state.decayMap.get(banner);
         // if there's no entry in the decay map, this chunk isn't in decay
         if (data == null) {
@@ -215,7 +218,6 @@ public class TerritoryManager implements ModInitializer {
 
     public static boolean HasPattern(ItemStack bannerItem) {
         NbtCompound comp = bannerItem.getOrCreateNbt();
-        LOGGER.info(comp.toString());
         NbtCompound blockEntityTag = comp.getCompound("BlockEntityTag");
         if (blockEntityTag == null)
             return false;
@@ -247,7 +249,7 @@ public class TerritoryManager implements ModInitializer {
             if (chunk.epoch() < lastLivingEpoch) {
                 BlockPos bannerPos = DecodePosition(chunk.bannerPos());
                 toRemove.add(bannerPos);
-                BlockState bannerState = world.getBlockState(bannerPos);
+                BlockState bannerState = overworld.getBlockState(bannerPos);
                 if (bannerState.getBlock() instanceof AbstractBannerBlock) {
                     BlockEntity bannerEntity = new BannerBlockEntity(bannerPos, bannerState);
                     FlickerBanner(bannerPos, bannerEntity);
@@ -263,8 +265,8 @@ public class TerritoryManager implements ModInitializer {
         boolean c = false;
         for (BlockPos pos : exileCache.keySet()) {
             BlockEntity e = exileCache.get(pos);
-            world.setBlockState(pos, e.getCachedState());
-            world.addBlockEntity(e);
+            overworld.setBlockState(pos, e.getCachedState());
+            overworld.addBlockEntity(e);
             c = true;
         }
         if (c)
@@ -273,7 +275,7 @@ public class TerritoryManager implements ModInitializer {
 
     public static void FlickerBanner(BlockPos pos, BlockEntity blockEntity) {
         exileCache.put(pos, blockEntity);
-        world.removeBlock(pos, false);
+        overworld.removeBlock(pos, false);
     }
 
     public static void DecayBanner(String banner, String name) {

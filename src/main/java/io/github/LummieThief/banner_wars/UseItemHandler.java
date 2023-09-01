@@ -22,7 +22,7 @@ public class UseItemHandler implements UseItemCallback {
     @Override
     public TypedActionResult<ItemStack> interact(PlayerEntity player, World world, Hand hand) {
         ItemStack handItem = player.getStackInHand(hand);
-        if (!(player instanceof ServerPlayerEntity) || world.isClient) {
+        if (!(player instanceof ServerPlayerEntity) || world.isClient || !world.getRegistryKey().equals(World.OVERWORLD)) {
             return TypedActionResult.pass(handItem);
         }
         Item item = handItem.getItem();
@@ -50,7 +50,7 @@ public class UseItemHandler implements UseItemCallback {
         if (!(world.getBlockState(hit.getBlockPos()).getBlock() instanceof Waterloggable))
             realPos = realPos.add(hit.getSide().getVector());
 
-        if (TerritoryManager.HasPermission(serverPlayer, realPos)) {
+        if (TerritoryManager.HasPermission(world, serverPlayer, realPos)) {
             return TypedActionResult.pass(handItem);
         }
         else {

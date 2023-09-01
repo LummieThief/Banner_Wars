@@ -27,13 +27,13 @@ import net.minecraft.world.World;
 public class UseBlockHandler implements UseBlockCallback {
     @Override
     public ActionResult interact(PlayerEntity player, World world, Hand hand, BlockHitResult hitResult) {
-        if (!(player instanceof ServerPlayerEntity) || world.isClient) {
+        if (!(player instanceof ServerPlayerEntity) || world.isClient || !world.getRegistryKey().equals(World.OVERWORLD)) {
             return ActionResult.PASS;
         }
         ServerPlayerEntity serverPlayer = (ServerPlayerEntity) player;
 
         // if the player doesn't have permission
-        if (!TerritoryManager.HasPermission(player, hitResult.getBlockPos())) {
+        if (!TerritoryManager.HasPermission(world, player, hitResult.getBlockPos())) {
             BlockEntity be = world.getBlockEntity(hitResult.getBlockPos());
             // check if they are trying to open a container, and if they are then let it pass
             if (be instanceof LockableContainerBlockEntity && !player.isSneaking()) {

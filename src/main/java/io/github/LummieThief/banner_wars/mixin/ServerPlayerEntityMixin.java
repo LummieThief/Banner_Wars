@@ -64,8 +64,8 @@ public abstract class ServerPlayerEntityMixin extends PlayerEntity {
         if (this.age % STATUS_EFFECT_CHECK_TIME == 0) {
             String banner =  TerritoryManager.GetBannerInChunk(this.getBlockPos());
             if (banner != null) {
-                if (TerritoryManager.HasPermission(this, this.getBlockPos())) {
-                    if (!TerritoryManager.InDecay(null, banner)) {
+                if (TerritoryManager.HasPermission(getEntityWorld(), this, this.getBlockPos())) {
+                    if (!TerritoryManager.InDecay(getEntityWorld(),null, banner)) {
                         StatusEffectInstance effect = new StatusEffectInstance(StatusEffects.HASTE, STATUS_EFFECT_CHECK_TIME + 20, 0, true, false, true);
                         this.addStatusEffect(effect, this);
                     }
@@ -81,7 +81,7 @@ public abstract class ServerPlayerEntityMixin extends PlayerEntity {
     @Override
     protected void onKilledBy(@Nullable LivingEntity adversary) {
         super.onKilledBy(adversary);
-        //if (!(adversary instanceof PlayerEntity)) return;
+        if (!(adversary instanceof PlayerEntity)) return;
         ItemStack headStack = this.getInventory().getArmorStack(3);
         if (TerritoryManager.isBanner(headStack)) {
             TerritoryManager.DecayBanner(TerritoryManager.BannerToString(headStack), this.getName().getString());

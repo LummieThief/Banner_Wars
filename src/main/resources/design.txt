@@ -7,10 +7,10 @@ When a banner with a pattern is placed in a chunk, it claims that chunk for 24 h
 A claimed chunk can only be interacted with by a player wearing a matching banner in their helmet slot.
     *An exception to this rule is made for blocks that can store items, which can be interacted with by anyone.
 A banner placed at or above y=0 will claim the chunk from y=0 to sky limit, and a banner placed below y=0 will claim the chunk from y=-1 to bedrock.
-TODO: Chunks in the Nether and End cannot be claimed.
+Chunks in the Nether and End cannot be claimed.
 Destroying a banner with a pattern will un-claim the chunk it was in.
 When a claim's timer reaches 0, the banner that claimed it loses its pattern and the chunk becomes unclaimed.
-TODO: Right-clicking a banner with a brush has the following effects:
+Right-clicking a banner with a brush has the following effects:
     1. If the clicked banner has a pattern and the player who clicked it is wearing a matching banner in their helmet slot:
         The clicked banner's claim timer is refreshed to 24 hours (and the brush loses durability).
     2. If the clicked banner has no pattern, the player who clicked it is wearing a banner, and the chunk containing the clicked banner is not already claimed:

@@ -22,12 +22,14 @@ public class WitherEntityMixin {
             method = "mobTick",
             at = @At(value = "INVOKE", target = "Lnet/minecraft/world/World;getBlockState(Lnet/minecraft/util/math/BlockPos;)Lnet/minecraft/block/BlockState;")
     )
-    private BlockState injected(World instance, BlockPos pos) {
-        if (TerritoryManager.HasBannerInChunk(pos) && !TerritoryManager.InDecay(pos, TerritoryManager.GetBannerInChunk(pos))) {
-            return instance.getBlockState(new BlockPos(0, -64, 0));
+    private BlockState injected(World world, BlockPos pos) {
+        if (world.isClient || !world.getRegistryKey().equals(World.OVERWORLD))
+            return world.getBlockState(pos);
+        if (TerritoryManager.HasBannerInChunk(pos) && !TerritoryManager.InDecay(world, pos, TerritoryManager.GetBannerInChunk(pos))) {
+            return world.getBlockState(new BlockPos(0, -64, 0));
         }
         else {
-            return instance.getBlockState(pos);
+            return world.getBlockState(pos);
         }
     }
 }

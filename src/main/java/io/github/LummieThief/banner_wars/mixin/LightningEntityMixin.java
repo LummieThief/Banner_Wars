@@ -14,13 +14,15 @@ import org.spongepowered.asm.mixin.injection.Redirect;
 public class LightningEntityMixin {
     @Shadow private int blocksSetOnFire;
     @Redirect(method = "spawnFire", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/World;setBlockState(Lnet/minecraft/util/math/BlockPos;Lnet/minecraft/block/BlockState;)Z"))
-    private boolean overrideSpawnFire(World instance, BlockPos pos, BlockState state) {
-        if (TerritoryManager.HasBannerInChunk(pos) && !TerritoryManager.InDecay(pos, TerritoryManager.GetBannerInChunk(pos))) {
+    private boolean overrideSpawnFire(World world, BlockPos pos, BlockState state) {
+        if (world.isClient || !world.getRegistryKey().equals(World.OVERWORLD))
+            return world.setBlockState(pos, state);
+        if (TerritoryManager.HasBannerInChunk(pos) && !TerritoryManager.InDecay(world, pos, TerritoryManager.GetBannerInChunk(pos))) {
             blocksSetOnFire--;
             return false;
         }
         else {
-            return instance.setBlockState(pos, state);
+            return world.setBlockState(pos, state);
         }
     }
 }

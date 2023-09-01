@@ -19,8 +19,10 @@ public class LavaFluidMixin {
             target = "Lnet/minecraft/world/World;setBlockState(Lnet/minecraft/util/math/BlockPos;Lnet/minecraft/block/BlockState;)Z"))
     private boolean overrideLightFire(World world, BlockPos pos, BlockState state,
                                          World _world, BlockPos _pos, FluidState _state, Random random) {
+        if (world.isClient || !world.getRegistryKey().equals(World.OVERWORLD))
+            return world.setBlockState(pos, state);
         BlockPos lavaPos = _pos;
-        if (TerritoryManager.HasPermission(lavaPos, pos)) {
+        if (TerritoryManager.HasPermission(world, lavaPos, pos)) {
             return world.setBlockState(pos, state);
         }
         return false;

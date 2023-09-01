@@ -13,18 +13,10 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 @Mixin(FireworkRocketEntity.class)
 public abstract class FireworkRocketEntityMixin implements IFireworkRocketEntityMixin {
-    @Shadow public abstract ItemStack getStack();
-
     @Override
     public void triggerExplosion() {
         FireworkRocketEntity rocket = ((FireworkRocketEntity)(Object)this);
         rocket.getWorld().sendEntityStatus(rocket, (byte)17);
         rocket.discard();
     }
-
-    @Inject(method = "explodeAndRemove", at = @At("HEAD"))
-    public void logNBT(CallbackInfo ci) {
-        TerritoryManager.LOGGER.info(this.getStack().getNbt().toString());
-    }
-
 }

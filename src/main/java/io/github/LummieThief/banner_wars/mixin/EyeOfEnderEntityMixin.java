@@ -41,6 +41,5 @@ public class EyeOfEnderEntityMixin implements IEyeOfEnderEntityMixin {
     @Override
     public void markTracker() {
         tracking = true;
-        TerritoryManager.LOGGER.info("tracker");
     }
 }

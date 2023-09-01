@@ -11,6 +11,8 @@ import net.minecraft.server.world.ServerWorld;
 import net.minecraft.util.math.BlockPointerImpl;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
+import net.minecraft.world.World;
+import org.apache.logging.log4j.core.jmx.Server;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.ModifyVariable;
@@ -21,7 +23,7 @@ public class DispenserBlockMixin {
 
     @ModifyVariable(method = "dispense", at = @At(value = "STORE"), ordinal = 0)
     public int overrideDispense(int oldInt, ServerWorld world, BlockPos pos) {
-        if (world.isClient)
+        if (world.isClient || !world.getRegistryKey().equals(World.OVERWORLD))
             return oldInt;
         // if the dispenser is empty, proceed as normal
         if (oldInt < 0)
@@ -45,7 +47,7 @@ public class DispenserBlockMixin {
             BlockPos outputPos = pos.add(dir.getVector());
 
             // if the dispenser has permission, dispense as normal
-            if (TerritoryManager.HasPermission(pos, outputPos)) {
+            if (TerritoryManager.HasPermission(world, pos, outputPos)) {
                 return oldInt;
             }
             else {

@@ -3,19 +3,19 @@ package io.github.LummieThief.banner_wars;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.world.ServerWorld;
+import net.minecraft.world.World;
 
 public class ServerTickHandler implements ServerTickEvents.StartTick {
     private static final int TICKS_PER_EPOCH = 100; // 12 ticks/minute
     private static final int CLAIM_LIFETIME = 17280; // 24 hours * 60 minutes * 12 ticks/minute
     private static final int DECAY_TIME = 180; // 15 minutes * 12 ticks/minute
-    private ServerWorld world;
     private long time;
 
-    public ServerTickHandler(ServerWorld world) {
-        this.world = world;
+    public ServerTickHandler() {
     }
     @Override
     public void onStartTick(MinecraftServer server) {
+        World world = server.getWorld(World.OVERWORLD);
         time = world.getTime();
         if (time % TICKS_PER_EPOCH == 0) {
             TerritoryManager.LOGGER.info("ServerTick: " + (time / TICKS_PER_EPOCH));

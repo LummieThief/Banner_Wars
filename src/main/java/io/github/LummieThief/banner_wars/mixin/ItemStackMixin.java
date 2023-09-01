@@ -36,6 +36,8 @@ public abstract class ItemStackMixin {
 
     @Redirect(method = "useOnBlock", at = @At(value = "INVOKE", target = "Lnet/minecraft/item/Item;useOnBlock(Lnet/minecraft/item/ItemUsageContext;)Lnet/minecraft/util/ActionResult;"))
     private ActionResult overrideUseOnBlock(Item item, ItemUsageContext context) {
+        if (context.getWorld().isClient || !context.getWorld().getRegistryKey().equals(World.OVERWORLD))
+            return item.useOnBlock(context);
 
         PlayerEntity playerEntity = context.getPlayer();
         if (!(playerEntity instanceof ServerPlayerEntity) || (item instanceof BlockItem && !(item instanceof VerticallyAttachableBlockItem))) {
@@ -44,7 +46,7 @@ public abstract class ItemStackMixin {
         ServerPlayerEntity player = (ServerPlayerEntity)playerEntity;
 
         ItemStack stack = (ItemStack)(Object)this;
-        boolean territorialPermission = TerritoryManager.HasPermission(context.getPlayer(), context.getBlockPos());
+        boolean territorialPermission = TerritoryManager.HasPermission(context.getWorld(), context.getPlayer(), context.getBlockPos());
         boolean personalPermission = !TerritoryManager.isBanner(stack) ||
                 (TerritoryManager.BannerToString(stack).equals(TerritoryManager.BannerToString(context.getPlayer().getInventory().getArmorStack(3))) &&
                         !TerritoryManager.HasBannerInChunk(context.getBlockPos()) ||
@@ -52,7 +54,6 @@ public abstract class ItemStackMixin {
 
 
         if (territorialPermission && personalPermission) {
-            TerritoryManager.LOGGER.info("ItemStackMixin: pass");
             return item.useOnBlock(context);
         }
         else {
@@ -66,7 +67,6 @@ public abstract class ItemStackMixin {
                     screenHandler.getRevision(),
                     slot,
                     player.getStackInHand(hand)));
-            TerritoryManager.LOGGER.info("ItemStackMixin: fail");
             return ActionResult.FAIL;
         }
     }

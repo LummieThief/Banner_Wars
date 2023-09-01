@@ -1,21 +1,30 @@
 package io.github.LummieThief.banner_wars.mixin;
 
 import io.github.LummieThief.banner_wars.TerritoryManager;
+import net.minecraft.entity.Entity;
+import net.minecraft.entity.EntityType;
 import net.minecraft.entity.projectile.SmallFireballEntity;
+import net.minecraft.nbt.NbtCompound;
 import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.world.World;
 import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 @Mixin(SmallFireballEntity.class)
-public class SmallFireballEntityMixin {
-
+public abstract class SmallFireballEntityMixin extends Entity {
+    public SmallFireballEntityMixin(EntityType<?> type, World world) {
+        super(type, world);
+    }
     @Inject(method = "onBlockHit", at = @At("HEAD"), cancellable = true)
     protected void overrideOnBlockHit(BlockHitResult blockHitResult, CallbackInfo ci) {
+        if (getEntityWorld().isClient || !getEntityWorld().getRegistryKey().equals(World.OVERWORLD))
+            return;
         BlockPos pos = blockHitResult.getBlockPos().offset(blockHitResult.getSide());
-        if (TerritoryManager.HasBannerInChunk(pos) && !TerritoryManager.InDecay(pos, TerritoryManager.GetBannerInChunk(pos))) {
+        if (TerritoryManager.HasBannerInChunk(pos) && !TerritoryManager.InDecay(getEntityWorld(), pos, TerritoryManager.GetBannerInChunk(pos))) {
             ci.cancel();
         }
     }

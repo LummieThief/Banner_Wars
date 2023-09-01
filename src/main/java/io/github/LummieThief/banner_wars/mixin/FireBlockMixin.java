@@ -39,7 +39,7 @@ public class FireBlockMixin {
         int i = this.getSpreadChance(world.getBlockState(pos));
         if (random.nextInt(spreadFactor) < i) {
             BlockPos firePos = _pos;
-            if (!TerritoryManager.HasPermission(firePos, pos)) {
+            if (!TerritoryManager.HasPermission(world, firePos, pos)) {
                 tryExtinguishFire(world, firePos);
             }
             else {
@@ -58,20 +58,22 @@ public class FireBlockMixin {
             ordinal = 1))
     public boolean redirectFireSpread(ServerWorld world, BlockPos pos, BlockState blockState, int i,
                                          BlockState _state, ServerWorld _world, BlockPos _pos, Random _random) {
+        if (world.isClient || !world.getRegistryKey().equals(World.OVERWORLD))
+            return world.setBlockState(pos, blockState, i);
         BlockPos firePos = _pos;
-        if (TerritoryManager.HasPermission(firePos, pos)) {
+        if (TerritoryManager.HasPermission(world, firePos, pos)) {
             BlockPos n = pos.north();
             BlockPos e = pos.east();
             BlockPos s = pos.south();
             BlockPos w = pos.west();
             BlockPos u = pos.up();
             BlockPos d = pos.down();
-            if ((isFlammable(world.getBlockState(n)) && TerritoryManager.HasPermission(firePos, n)) ||
-                    (isFlammable(world.getBlockState(e)) && TerritoryManager.HasPermission(firePos, e)) ||
-                    (isFlammable(world.getBlockState(s)) && TerritoryManager.HasPermission(firePos, s)) ||
-                    (isFlammable(world.getBlockState(w)) && TerritoryManager.HasPermission(firePos, w)) ||
-                    (isFlammable(world.getBlockState(u)) && TerritoryManager.HasPermission(firePos, u)) ||
-                    (isFlammable(world.getBlockState(d)) && TerritoryManager.HasPermission(firePos, d))) {
+            if ((isFlammable(world.getBlockState(n)) && TerritoryManager.HasPermission(world, firePos, n)) ||
+                    (isFlammable(world.getBlockState(e)) && TerritoryManager.HasPermission(world, firePos, e)) ||
+                    (isFlammable(world.getBlockState(s)) && TerritoryManager.HasPermission(world, firePos, s)) ||
+                    (isFlammable(world.getBlockState(w)) && TerritoryManager.HasPermission(world, firePos, w)) ||
+                    (isFlammable(world.getBlockState(u)) && TerritoryManager.HasPermission(world, firePos, u)) ||
+                    (isFlammable(world.getBlockState(d)) && TerritoryManager.HasPermission(world, firePos, d))) {
 
                 return world.setBlockState(pos, blockState, i);
             }

@@ -18,9 +18,9 @@ import org.jetbrains.annotations.Nullable;
 public class BreakBlockHandler implements PlayerBlockBreakEvents.Before{
     @Override
     public boolean beforeBlockBreak(World world, PlayerEntity player, BlockPos pos, BlockState state, @Nullable BlockEntity blockEntity) {
-        if (!(player instanceof ServerPlayerEntity) || world.isClient)
+        if (!(player instanceof ServerPlayerEntity) || world.isClient || !world.getRegistryKey().equals(World.OVERWORLD))
             return true;
-        boolean hasPermission = TerritoryManager.HasPermission(player, pos);
+        boolean hasPermission = TerritoryManager.HasPermission(world, player, pos);
         Block block = state.getBlock();
         Item item = block.asItem();
         if (!hasPermission && item instanceof VerticallyAttachableBlockItem) {
