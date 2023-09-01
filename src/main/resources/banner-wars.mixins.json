@@ -12,7 +12,6 @@
 		"DispenserBlockMixin",
 		"EntityMixin",
 		"ExplosionMixin",
-		"EyeOfEnderEntityMixin",
 		"FallingBlockEntityMixin",
 		"FireBlockMixin",
 		"FireworkRocketEntityMixin",

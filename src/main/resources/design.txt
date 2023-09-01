@@ -1,7 +1,7 @@
 ---BASICS---
 Banners that are broken will lose their pattern.
-Banners will only be able to be broken by being mined.
-Banners with a pattern can be equipped in the helmet slot.
+Banners don't require supporting blocks.
+TODO: Banners with a pattern can be equipped in the helmet slot and cannot be unequipped once equipped.
 A banner with a pattern can only be placed by a player wearing a matching banner in their helmet slot.
 When a banner with a pattern is placed in a chunk, it claims that chunk for 24 hours.
 A claimed chunk can only be interacted with by a player wearing a matching banner in their helmet slot.
@@ -20,16 +20,12 @@ While a player is standing in a chunk claimed by a banner they are not wearing i
 
 ---COMBAT---
 When a player dies while wearing a banner, the banner will remain on their head through death.
-When a player is killed by another player, if the slain player is wearing a banner, all chunks claimed by that banner enter decay for 15 minutes.
+When a player is killed by another player, all chunks claimed by the banner the killed player is wearing enter decay for 15 minutes unless both players are wearing matching banners.
 While a chunk is in decay, none of its regular protections apply (except for the banner that claims the chunk, which remains protected).
 While a chunk is in decay, any events that would cause it to enter decay again have no effect.
 When a chunk exits decay, it will be unable to enter decay again for 15 minutes.
 
 --MAYBE--
-When a player logs off the server while in combat with a player, if the fleeing player is wearing a banner, all chunks claimed by that banner enter decay for 15 minutes.
-EITHER: When in the overworld, Fireworks cannot be used to power an Elytra
-    OR: When in the overworld, players can only use fireworks to power an Elytra while inside a chunk claimed by the banner they are wearing in their helmet slot.
-    OR: Being damaged prevents the use of the Elytra until out of combat.
-    OR: Right-clicking a player with shears instantly breaks their Elytra
-When a banner item is burned, all chunks claimed by that banner enter decay for 15 minutes.
-A banner equipped on a players head can only be unequipped by pressing Q, and the item entity it creates cannot be
+TODO: When a player logs off the server while in combat with a player, if the fleeing player is wearing a banner, all chunks claimed by that banner enter decay for 15 minutes.
+TODO: When a player is damaged by another player, the damaged player's equipped Elytra immediately breaks unless both players are wearing matching banners.
+TODO: If a player is wearing a banner and clicks it with a flint and steel, it will destroy the banner and prevent them from equipping a matching banner ever again.

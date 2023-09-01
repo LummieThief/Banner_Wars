@@ -8,12 +8,14 @@ import net.minecraft.entity.EquipmentSlot;
 import net.minecraft.entity.ItemEntity;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.boss.WitherEntity;
+import net.minecraft.entity.damage.DamageSource;
 import net.minecraft.entity.effect.StatusEffect;
 import net.minecraft.entity.effect.StatusEffectInstance;
 import net.minecraft.entity.effect.StatusEffects;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.inventory.Inventory;
+import net.minecraft.item.ElytraItem;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
 import net.minecraft.network.packet.s2c.play.ScreenHandlerSlotUpdateS2CPacket;
@@ -45,17 +47,16 @@ public abstract class ServerPlayerEntityMixin extends PlayerEntity {
     @Override
     protected void dropInventory() {
         ServerPlayerEntity player = (ServerPlayerEntity)(Object)this;
-        PlayerInventory inventory = player.getInventory();
-        ItemStack headStack = inventory.getArmorStack(3); //head slot = 39 sometimes
+        ItemStack headStack = getEquippedStack(EquipmentSlot.HEAD);
         boolean isBanner = TerritoryManager.isBanner(headStack);
         if (isBanner) {
-            player.getInventory().removeStack(39);
+            player.getInventory().removeStack(39); // head slot = 39
         }
 
         super.dropInventory();
 
         if (isBanner) {
-            inventory.setStack(39, headStack);
+            equipStack(EquipmentSlot.HEAD, headStack);
         }
     }
 
@@ -86,5 +87,27 @@ public abstract class ServerPlayerEntityMixin extends PlayerEntity {
         if (TerritoryManager.isBanner(headStack)) {
             TerritoryManager.DecayBanner(TerritoryManager.BannerToString(headStack), this.getName().getString());
         }
+    }
+
+    @Override
+    public boolean damage(DamageSource source, float amount)
+    {
+        boolean b = super.damage(source, amount);
+        if (source.getAttacker() != null && source.getAttacker().isPlayer()) {
+            ItemStack headStack = getEquippedStack(EquipmentSlot.HEAD);
+            ItemStack otherStack = ((PlayerEntity)source.getAttacker()).getEquippedStack(EquipmentSlot.HEAD);
+
+            if (TerritoryManager.isBanner(headStack) && !headStack.equals(otherStack)) {
+                ItemStack chestStack = getEquippedStack(EquipmentSlot.CHEST);
+                TerritoryManager.LOGGER.info(chestStack.toString());
+                if (chestStack.getItem().equals(Items.ELYTRA)) {
+                    if (chestStack.getDamage() != chestStack.getMaxDamage() - 1) {
+                        chestStack.setDamage(chestStack.getMaxDamage() - 1);
+                        sendEquipmentBreakStatus(EquipmentSlot.CHEST);
+                    }
+                }
+            }
+        }
+        return b;
     }
 }
