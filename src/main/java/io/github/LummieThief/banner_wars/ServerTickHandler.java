@@ -6,9 +6,9 @@ import net.minecraft.server.world.ServerWorld;
 import net.minecraft.world.World;
 
 public class ServerTickHandler implements ServerTickEvents.StartTick {
-    private static final int TICKS_PER_EPOCH = 100; // 12 ticks/minute
-    private static final int CLAIM_LIFETIME = 17280; // 24 hours * 60 minutes * 12 ticks/minute
-    private static final int DECAY_TIME = 180; // 15 minutes * 12 ticks/minute
+    private static final int TICKS_PER_EPOCH = 100; // 100 = 12 ticks/minute
+    private static final int CLAIM_LIFETIME = 60; // 17280 = 24 hours * 60 minutes * 12 ticks/minute
+    private static final int DECAY_TIME = 12; // 180 = 15 minutes * 12 ticks/minute
     private long time;
 
     public ServerTickHandler() {

@@ -24,7 +24,7 @@ public class BreakBlockHandler implements PlayerBlockBreakEvents.Before{
         Block block = state.getBlock();
         Item item = block.asItem();
         if (!hasPermission && item instanceof VerticallyAttachableBlockItem) {
-            world.scheduleBlockTick(pos, state.getBlock(), 10);
+            world.scheduleBlockTick(pos, state.getBlock(), 2);
         }
         return hasPermission;
     }

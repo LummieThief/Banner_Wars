@@ -2,27 +2,21 @@ package io.github.LummieThief.banner_wars.mixin;
 
 import com.mojang.authlib.GameProfile;
 import io.github.LummieThief.banner_wars.TerritoryManager;
-import net.minecraft.block.BlockState;
-import net.minecraft.block.Blocks;
+import net.minecraft.advancement.criterion.Criteria;
 import net.minecraft.entity.EquipmentSlot;
-import net.minecraft.entity.ItemEntity;
 import net.minecraft.entity.LivingEntity;
-import net.minecraft.entity.boss.WitherEntity;
 import net.minecraft.entity.damage.DamageSource;
-import net.minecraft.entity.effect.StatusEffect;
 import net.minecraft.entity.effect.StatusEffectInstance;
 import net.minecraft.entity.effect.StatusEffects;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.PlayerInventory;
-import net.minecraft.inventory.Inventory;
-import net.minecraft.item.ElytraItem;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
 import net.minecraft.network.packet.s2c.play.ScreenHandlerSlotUpdateS2CPacket;
 import net.minecraft.screen.ScreenHandler;
 import net.minecraft.server.network.ServerPlayerEntity;
+import net.minecraft.util.Hand;
 import net.minecraft.util.math.BlockPos;
-import net.minecraft.world.GameRules;
 import net.minecraft.world.World;
 import org.jetbrains.annotations.Nullable;
 import org.spongepowered.asm.mixin.Mixin;
@@ -48,7 +42,7 @@ public abstract class ServerPlayerEntityMixin extends PlayerEntity {
     protected void dropInventory() {
         ServerPlayerEntity player = (ServerPlayerEntity)(Object)this;
         ItemStack headStack = getEquippedStack(EquipmentSlot.HEAD);
-        boolean isBanner = TerritoryManager.isBanner(headStack);
+        boolean isBanner = TerritoryManager.IsBanner(headStack);
         if (isBanner) {
             player.getInventory().removeStack(39); // head slot = 39
         }
@@ -84,7 +78,7 @@ public abstract class ServerPlayerEntityMixin extends PlayerEntity {
         super.onKilledBy(adversary);
         if (!(adversary instanceof PlayerEntity)) return;
         ItemStack headStack = this.getInventory().getArmorStack(3);
-        if (TerritoryManager.isBanner(headStack)) {
+        if (TerritoryManager.IsBanner(headStack)) {
             TerritoryManager.DecayBanner(TerritoryManager.BannerToString(headStack), this.getName().getString());
         }
     }
@@ -93,17 +87,25 @@ public abstract class ServerPlayerEntityMixin extends PlayerEntity {
     public boolean damage(DamageSource source, float amount)
     {
         boolean b = super.damage(source, amount);
-        if (source.getAttacker() != null && source.getAttacker().isPlayer()) {
+        if (amount > 0 && source.getAttacker() != null && source.getAttacker().isPlayer()) {
             ItemStack headStack = getEquippedStack(EquipmentSlot.HEAD);
             ItemStack otherStack = ((PlayerEntity)source.getAttacker()).getEquippedStack(EquipmentSlot.HEAD);
 
-            if (TerritoryManager.isBanner(headStack) && !headStack.equals(otherStack)) {
+            if (!TerritoryManager.IsBanner(headStack) || !headStack.equals(otherStack)) {
                 ItemStack chestStack = getEquippedStack(EquipmentSlot.CHEST);
                 TerritoryManager.LOGGER.info(chestStack.toString());
                 if (chestStack.getItem().equals(Items.ELYTRA)) {
                     if (chestStack.getDamage() != chestStack.getMaxDamage() - 1) {
                         chestStack.setDamage(chestStack.getMaxDamage() - 1);
+                        Criteria.ITEM_DURABILITY_CHANGED.trigger((ServerPlayerEntity)(Object)this, chestStack, 1);
                         sendEquipmentBreakStatus(EquipmentSlot.CHEST);
+                        ScreenHandler screenHandler = currentScreenHandler;
+                        int slot = 38;
+                        ((ServerPlayerEntity)(Object)this).networkHandler.sendPacket(new ScreenHandlerSlotUpdateS2CPacket(
+                                screenHandler.syncId,
+                                screenHandler.getRevision(),
+                                slot,
+                                chestStack));
                     }
                 }
             }

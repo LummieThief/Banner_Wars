@@ -5,7 +5,6 @@ import net.minecraft.block.*;
 import net.minecraft.block.entity.BannerBlockEntity;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.entity.EquipmentSlot;
-import net.minecraft.entity.LivingEntity;
 import net.minecraft.item.BrushItem;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.ItemUsageContext;
@@ -14,11 +13,9 @@ import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.util.ActionResult;
 import net.minecraft.util.Hand;
 import net.minecraft.util.Identifier;
-import net.minecraft.util.hit.HitResult;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
 import org.spongepowered.asm.mixin.Mixin;
-import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
@@ -39,7 +36,7 @@ public abstract class BrushItemMixin {
 
         ItemStack headStack = player.getInventory().getArmorStack(3);
         // check that the player has a banner equipped and they have permission to claim
-        if (headStack != null && TerritoryManager.isBanner(headStack) && TerritoryManager.HasPattern(headStack) && TerritoryManager.HasPermission(world, player, pos)) {
+        if (headStack != null && TerritoryManager.IsBanner(headStack) && TerritoryManager.HasPattern(headStack) && TerritoryManager.HasPermission(world, player, pos)) {
             // If the chunk is already claimed, the player is only allowed to re-upkeep it.
             if (TerritoryManager.HasBannerInChunk(pos) && !TerritoryManager.GetBannerPosInChunk(pos).equals(pos)) {
                 return;
@@ -61,7 +58,7 @@ public abstract class BrushItemMixin {
 
             bannerEntity.readFrom(headStack, newBlock.getColor());
             bannerEntity.setCachedState(newState);
-            TerritoryManager.FlickerBanner(pos, bannerEntity);
+            TerritoryManager.ScheduleETB(pos, bannerEntity);
             TerritoryManager.createFireworkEffect(world, pos.getX() + 0.5, wallBanner ? pos.getY() + 0.3 : pos.getY() + 1, pos.getZ() + 0.5, bannerEntity.getPatterns());
             TerritoryManager.AddChunk(TerritoryManager.BannerToString(headStack), pos);
 

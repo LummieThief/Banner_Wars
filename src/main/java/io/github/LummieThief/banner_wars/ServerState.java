@@ -11,7 +11,7 @@ import java.util.*;
 // Saves each territory as an object called "territory#", with a field called "banner" and an arbitrary number of
 // fields called "pos#" and "epoch#" for each chunk in the territory
 public class ServerState extends PersistentState {
-    private static boolean RESET = true;
+    private static boolean RESET = false;
     public Map<Long, ChunkData> chunkMap = new HashMap<>();
     public Map<String, DecayData> decayMap = new HashMap<>();
     @Override

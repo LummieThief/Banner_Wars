@@ -2,7 +2,6 @@ package io.github.LummieThief.banner_wars.mixin;
 
 import com.mojang.datafixers.util.Pair;
 import io.github.LummieThief.banner_wars.TerritoryManager;
-import net.minecraft.block.BannerBlock;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.WallBannerBlock;
@@ -19,7 +18,6 @@ import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.util.DyeColor;
 import net.minecraft.util.Hand;
 import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.ChunkPos;
 import net.minecraft.world.World;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
@@ -38,7 +36,7 @@ public class BlockItemMixin {
         if (world.isClient || !world.getRegistryKey().equals(World.OVERWORLD))
             return;
         String existingBanner = TerritoryManager.GetBannerInChunk(pos);
-        if (existingBanner == null && TerritoryManager.isBanner(stack) && TerritoryManager.HasPattern(stack)) {
+        if (existingBanner == null && TerritoryManager.IsBanner(stack) && TerritoryManager.HasPattern(stack)) {
             String banner = TerritoryManager.BannerToString(stack);
             TerritoryManager.LOGGER.info("adding chunk " + banner);
             TerritoryManager.AddChunk(banner, pos);

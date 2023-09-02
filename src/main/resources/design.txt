@@ -29,3 +29,7 @@ When a chunk exits decay, it will be unable to enter decay again for 15 minutes.
 TODO: When a player logs off the server while in combat with a player, if the fleeing player is wearing a banner, all chunks claimed by that banner enter decay for 15 minutes.
 TODO: When a player is damaged by another player, the damaged player's equipped Elytra immediately breaks unless both players are wearing matching banners.
 TODO: If a player is wearing a banner and clicks it with a flint and steel, it will destroy the banner and prevent them from equipping a matching banner ever again.
+
+two bald guys punching cant break each others elytra //need to test
+TODO: save system not working
+wings not breaking //need to test

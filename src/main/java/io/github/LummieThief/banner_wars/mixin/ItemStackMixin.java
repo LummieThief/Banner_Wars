@@ -1,30 +1,19 @@
 package io.github.LummieThief.banner_wars.mixin;
 
 import io.github.LummieThief.banner_wars.TerritoryManager;
-import net.minecraft.block.Block;
-import net.minecraft.block.pattern.CachedBlockPosition;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.item.*;
-import net.minecraft.network.packet.s2c.play.BlockUpdateS2CPacket;
 import net.minecraft.network.packet.s2c.play.ScreenHandlerSlotUpdateS2CPacket;
-import net.minecraft.registry.Registry;
-import net.minecraft.registry.RegistryKeys;
 import net.minecraft.screen.ScreenHandler;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.util.ActionResult;
 import net.minecraft.util.Hand;
-import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
-import org.apache.logging.log4j.core.jmx.Server;
 import org.spongepowered.asm.mixin.Mixin;
-import org.spongepowered.asm.mixin.Overwrite;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
-import org.spongepowered.asm.mixin.injection.Inject;
-import org.spongepowered.asm.mixin.injection.ModifyVariable;
 import org.spongepowered.asm.mixin.injection.Redirect;
-import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 // The first line of defense for grief protection. This cancels actions such as putting glow ink on a sign, stripping
 // logs with an axe, or placing an armor stand. It doesnt stop blocks from being placed other than vertically attachable
@@ -47,7 +36,7 @@ public abstract class ItemStackMixin {
 
         ItemStack stack = (ItemStack)(Object)this;
         boolean territorialPermission = TerritoryManager.HasPermission(context.getWorld(), context.getPlayer(), context.getBlockPos());
-        boolean personalPermission = !TerritoryManager.isBanner(stack) ||
+        boolean personalPermission = !TerritoryManager.IsBanner(stack) ||
                 (TerritoryManager.BannerToString(stack).equals(TerritoryManager.BannerToString(context.getPlayer().getInventory().getArmorStack(3))) &&
                         !TerritoryManager.HasBannerInChunk(context.getBlockPos()) ||
                         !TerritoryManager.HasPattern(stack));

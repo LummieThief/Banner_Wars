@@ -1,23 +1,19 @@
 package io.github.LummieThief.banner_wars;
 
-import com.mojang.brigadier.LiteralMessage;
-import com.mojang.brigadier.Message;
 import com.mojang.datafixers.util.Pair;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
+import net.fabricmc.fabric.api.event.player.AttackBlockCallback;
 import net.fabricmc.fabric.api.event.player.PlayerBlockBreakEvents;
 import net.fabricmc.fabric.api.event.player.UseBlockCallback;
 import net.fabricmc.fabric.api.event.player.UseItemCallback;
-import net.fabricmc.fabric.api.util.NbtType;
 import net.minecraft.block.AbstractBannerBlock;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
-import net.minecraft.block.Blocks;
 import net.minecraft.block.entity.BannerBlockEntity;
 import net.minecraft.block.entity.BannerPattern;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.fabricmc.api.ModInitializer;
-import net.fabricmc.fabric.api.event.lifecycle.v1.ServerEntityEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
 import net.minecraft.entity.EquipmentSlot;
 import net.minecraft.entity.projectile.FireworkRocketEntity;
@@ -27,20 +23,13 @@ import net.minecraft.item.Items;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.nbt.NbtElement;
 import net.minecraft.nbt.NbtList;
-import net.minecraft.network.message.MessageType;
-import net.minecraft.network.packet.s2c.play.BlockUpdateS2CPacket;
 import net.minecraft.registry.entry.RegistryEntry;
 import net.minecraft.server.MinecraftServer;
-import net.minecraft.server.PlayerManager;
-import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
-import net.minecraft.text.*;
-import net.minecraft.util.BlockRotation;
 import net.minecraft.util.DyeColor;
 import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.hit.HitResult;
 import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.ChunkPos;
 import net.minecraft.world.World;
 import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
@@ -77,6 +66,7 @@ public class TerritoryManager implements ModInitializer {
         });*/
         UseBlockCallback.EVENT.register(new UseBlockHandler());
         UseItemCallback.EVENT.register(new UseItemHandler());
+        AttackBlockCallback.EVENT.register(new AttackBlockHandler());
 
         PlayerBlockBreakEvents.BEFORE.register(new BreakBlockHandler());
 
@@ -84,11 +74,14 @@ public class TerritoryManager implements ModInitializer {
 
     /**
      *  Determines if a given item is one of the 16 banner types, regardless of color.
-     * @param item the item to check.
+     * @param stack the item to check.
      * @return whether the item is a banner.
      */
-    public static boolean isBanner(@NotNull ItemStack item) {
-        int id = Item.getRawId(item.getItem());
+    public static boolean IsBanner(@NotNull ItemStack stack) {
+        return IsBanner(stack.getItem());
+    }
+    public static boolean IsBanner(@NotNull Item item) {
+        int id = Item.getRawId(item);
         // 1087 is id of white banner
         // 1102 is id of black banner
         return id >= 1087 && id <= 1102;
@@ -151,6 +144,8 @@ public class TerritoryManager implements ModInitializer {
         return EncodeChunkPosition(DecodePosition(bannerPos));
     }
     public static String GetBannerInChunk(BlockPos pos) {
+        if (state == null)
+            return null;
         ChunkData data = state.chunkMap.get(EncodeChunkPosition(pos));
         if (data != null) {
             return data.bannerPattern();
@@ -158,6 +153,8 @@ public class TerritoryManager implements ModInitializer {
         return null;
     }
     public static BlockPos GetBannerPosInChunk(BlockPos pos) {
+        if (state == null)
+            return null;
         ChunkData data = state.chunkMap.get(EncodeChunkPosition(pos));
         if (data != null) {
             return DecodePosition(data.bannerPos());
@@ -169,6 +166,8 @@ public class TerritoryManager implements ModInitializer {
     }
 
     public static void AddChunk(String banner, BlockPos bannerPos) {
+        if (state == null)
+            return;
         long chunkCode = EncodeChunkPosition(bannerPos);
         long blockCode = EncodeBlockPosition(bannerPos);
         state.chunkMap.put(chunkCode, new ChunkData(banner, blockCode, serverTickHandler.getEpoch()));
@@ -203,7 +202,7 @@ public class TerritoryManager implements ModInitializer {
         return destBanner.equals(sourceBanner) || InDecay(world, dest, destBanner);
     }
     public static boolean InDecay(World world, BlockPos pos, String banner) {
-        if (world.isClient || !world.getRegistryKey().equals(World.OVERWORLD)) {
+        if (world.isClient || !world.getRegistryKey().equals(World.OVERWORLD) || state == null) {
             return true;
         }
         DecayData data = state.decayMap.get(banner);
@@ -240,10 +239,14 @@ public class TerritoryManager implements ModInitializer {
     }
 
     public static void RemoveChunk(BlockPos pos) {
+        if (state == null)
+            return;
         state.chunkMap.remove(EncodeChunkPosition(pos));
     }
 
     public static void FlickerFadingBanners(long lastLivingEpoch) {
+        if (state == null)
+            return;
         Queue<BlockPos> toRemove = new LinkedList<>();
         for (ChunkData chunk : state.chunkMap.values()) {
             if (chunk.epoch() < lastLivingEpoch) {
@@ -252,7 +255,7 @@ public class TerritoryManager implements ModInitializer {
                 BlockState bannerState = overworld.getBlockState(bannerPos);
                 if (bannerState.getBlock() instanceof AbstractBannerBlock) {
                     BlockEntity bannerEntity = new BannerBlockEntity(bannerPos, bannerState);
-                    FlickerBanner(bannerPos, bannerEntity);
+                    ScheduleETB(bannerPos, bannerEntity);
                 }
             }
         }
@@ -267,18 +270,22 @@ public class TerritoryManager implements ModInitializer {
             BlockEntity e = exileCache.get(pos);
             overworld.setBlockState(pos, e.getCachedState());
             overworld.addBlockEntity(e);
+            overworld.updateListeners(pos, e.getCachedState(), e.getCachedState(), Block.NOTIFY_LISTENERS);
+            LOGGER.info("etbd");
             c = true;
         }
         if (c)
             exileCache.clear();
     }
 
-    public static void FlickerBanner(BlockPos pos, BlockEntity blockEntity) {
+    public static void ScheduleETB(BlockPos pos, BlockEntity blockEntity) {
         exileCache.put(pos, blockEntity);
         overworld.removeBlock(pos, false);
     }
 
     public static void DecayBanner(String banner, String name) {
+        if (state == null)
+            return;
         if (!state.decayMap.containsKey(banner)) {
             state.decayMap.put(banner, new DecayData(serverTickHandler.getEpoch(), name));
             String cmd = String.format("/tellraw @a [{\"text\":\"[Server] \"},{\"text\":\"%s\",\"color\":\"light_purple\"}," +
@@ -288,6 +295,8 @@ public class TerritoryManager implements ModInitializer {
     }
 
     public static void UnDecayBanners(long lastDecayedEpoch, long lastDecayProtectionEpoch) {
+        if (state == null)
+            return;
         TerritoryManager.lastDecayedEpoch = lastDecayedEpoch;
         for (String banner : state.decayMap.keySet()) {
             DecayData data = state.decayMap.get(banner);
