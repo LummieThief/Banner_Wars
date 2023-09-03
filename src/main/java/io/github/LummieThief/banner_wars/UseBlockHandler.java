@@ -37,7 +37,7 @@ public class UseBlockHandler implements UseBlockCallback {
         if (!TerritoryManager.HasPermission(world, player, hitResult.getBlockPos())) {
             BlockEntity be = world.getBlockEntity(hitResult.getBlockPos());
             // check if they are trying to open a container, and if they are then let it pass
-            if (be instanceof BannerBlockEntity) {
+            if (be != null && be.getCachedState().getBlock().asItem() instanceof VerticallyAttachableBlockItem) {
                 world.updateListeners(hitResult.getBlockPos(), be.getCachedState(), be.getCachedState(), Block.NOTIFY_LISTENERS);
             }
             else if (be instanceof LockableContainerBlockEntity && !player.isSneaking()) {

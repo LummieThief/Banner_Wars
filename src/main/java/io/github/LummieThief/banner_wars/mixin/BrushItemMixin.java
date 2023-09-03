@@ -59,7 +59,7 @@ public abstract class BrushItemMixin {
             bannerEntity.readFrom(headStack, newBlock.getColor());
             bannerEntity.setCachedState(newState);
             TerritoryManager.ScheduleETB(pos, bannerEntity);
-            TerritoryManager.createFireworkEffect(world, pos.getX() + 0.5, wallBanner ? pos.getY() + 0.3 : pos.getY() + 1, pos.getZ() + 0.5, bannerEntity.getPatterns());
+            TerritoryManager.CreateFireworkEffect(world, pos.getX() + 0.5, wallBanner ? pos.getY() + 0.3 : pos.getY() + 1, pos.getZ() + 0.5, bannerEntity.getPatterns());
             TerritoryManager.AddChunk(TerritoryManager.BannerToString(headStack), pos);
 
             ItemStack stack = player.getStackInHand(context.getHand());

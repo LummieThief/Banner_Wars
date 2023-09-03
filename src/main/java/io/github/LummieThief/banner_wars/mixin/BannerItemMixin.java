@@ -13,12 +13,6 @@ public class BannerItemMixin extends Item implements Equipment{
     public BannerItemMixin(Settings settings) {
         super(settings);
     }
-
-    @Override
-    public TypedActionResult<ItemStack> use(World world, PlayerEntity user, Hand hand) {
-        return this.equipAndSwap((BannerItem)(Object)this, world, user, hand);
-    }
-
     @Override
     public EquipmentSlot getSlotType() {
         return EquipmentSlot.HEAD;

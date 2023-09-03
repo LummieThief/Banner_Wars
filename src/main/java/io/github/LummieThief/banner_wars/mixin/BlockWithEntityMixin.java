@@ -3,6 +3,7 @@ package io.github.LummieThief.banner_wars.mixin;
 import io.github.LummieThief.banner_wars.TerritoryManager;
 import net.minecraft.block.*;
 import net.minecraft.block.entity.BannerBlockEntity;
+import net.minecraft.item.VerticallyAttachableBlockItem;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.random.Random;
@@ -16,7 +17,7 @@ public abstract class BlockWithEntityMixin extends AbstractBlock {
 
     @Override
     public void scheduledTick(BlockState state, ServerWorld world, BlockPos pos, Random random) {
-        if (TerritoryManager.IsBanner(state.getBlock().asItem()))
+        if (state.getBlock().asItem() instanceof VerticallyAttachableBlockItem)
             world.updateListeners(pos, state, state, Block.NOTIFY_LISTENERS);
         super.scheduledTick(state, world, pos, random);
     }

@@ -1,6 +1,10 @@
 package io.github.LummieThief.banner_wars;
 
+import net.fabricmc.fabric.api.util.NbtType;
 import net.minecraft.nbt.NbtCompound;
+import net.minecraft.nbt.NbtElement;
+import net.minecraft.nbt.NbtList;
+import net.minecraft.nbt.NbtTypes;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.world.PersistentState;
 import net.minecraft.world.PersistentStateManager;
@@ -8,19 +12,39 @@ import net.minecraft.world.World;
 
 import java.util.*;
 
-// Saves each territory as an object called "territory#", with a field called "banner" and an arbitrary number of
-// fields called "pos#" and "epoch#" for each chunk in the territory
+/*
+nbt{
+    chunks[
+        chunk{
+            banner,
+            pos,
+            epoch
+        }
+    ],
+    players[
+        player{
+            username,
+            banners[
+                banner{
+                    pattern
+                }
+            ]
+        }
+    ]
+}
+*/
 public class ServerState extends PersistentState {
     private static boolean RESET = false;
     public Map<Long, ChunkData> chunkMap = new HashMap<>();
     public Map<String, DecayData> decayMap = new HashMap<>();
+    public Map<String, Set<String>> betrayalMap = new HashMap<>();
     @Override
     public NbtCompound writeNbt(NbtCompound nbt) {
         if (RESET) {
             nbt = new NbtCompound();
         }
         else {
-            int c = 0;
+            NbtList chunks = new NbtList();
             for (long chunkCode : chunkMap.keySet()) {
                 NbtCompound chunk = new NbtCompound();
 
@@ -29,10 +53,28 @@ public class ServerState extends PersistentState {
                 chunk.putLong("pos", chunkData.bannerPos());
                 chunk.putInt("epoch", chunkData.epoch());
 
-                nbt.put("chunk" + c, chunk);
-                c++;
+                chunks.add(chunk);
             }
+            nbt.put("chunks", chunks);
+
+            NbtList players = new NbtList();
+            for (String username : betrayalMap.keySet()) {
+                NbtCompound player = new NbtCompound();
+                player.putString("username", username);
+
+                NbtList banners = new NbtList();
+                Set<String> set = betrayalMap.getOrDefault(username, new HashSet<>());
+                for (String pattern : set) {
+                    NbtCompound banner = new NbtCompound();
+                    banner.putString("pattern", pattern);
+                    banners.add(banner);
+                }
+                player.put("banners", banners);
+                players.add(player);
+            }
+            nbt.put("players", players);
         }
+        TerritoryManager.LOGGER.info(nbt.toString());
         return nbt;
     }
 
@@ -43,10 +85,26 @@ public class ServerState extends PersistentState {
         }
         else {
             state.chunkMap = new HashMap<>();
-            for (int c = 0; tag.contains("chunk" + c); c++) {
-                NbtCompound chunk = tag.getCompound("chunk" + c);
-                ChunkData chunkData = new ChunkData(chunk.getString("bannerPattern"), chunk.getLong("bannerPos"), chunk.getInt("epoch"));
+            state.betrayalMap = new HashMap<>();
+            NbtList chunkList = tag.getList("chunks", NbtElement.COMPOUND_TYPE);
+            for (int i = 0; i < chunkList.size(); i++) {
+                NbtCompound chunk = chunkList.getCompound(i);
+                ChunkData chunkData = new ChunkData(chunk.getString("banner"), chunk.getLong("pos"), chunk.getInt("epoch"));
                 state.chunkMap.put(TerritoryManager.ConvertBlockEncodingToChunkEncoding(chunkData.bannerPos()), chunkData);
+            }
+
+            NbtList playerList = tag.getList("players", NbtElement.COMPOUND_TYPE);
+            for (int i = 0; i < playerList.size(); i++) {
+                NbtCompound player = playerList.getCompound(i);
+                String username = player.getString("username");
+                Set<String> patternSet = new HashSet<>();
+                NbtList bannerList = player.getList("banners", NbtElement.COMPOUND_TYPE);
+                for (int k = 0; k < bannerList.size(); k++) {
+                    NbtCompound banner = bannerList.getCompound(k);
+                    String pattern = banner.getString("pattern");
+                    patternSet.add(pattern);
+                }
+                state.betrayalMap.put(username, patternSet);
             }
         }
         return state;

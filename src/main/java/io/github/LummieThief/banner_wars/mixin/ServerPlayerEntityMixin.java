@@ -8,6 +8,7 @@ import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.damage.DamageSource;
 import net.minecraft.entity.effect.StatusEffectInstance;
 import net.minecraft.entity.effect.StatusEffects;
+import net.minecraft.entity.mob.MobEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.item.ItemStack;
@@ -79,7 +80,7 @@ public abstract class ServerPlayerEntityMixin extends PlayerEntity {
         if (!(adversary instanceof PlayerEntity)) return;
         ItemStack headStack = this.getInventory().getArmorStack(3);
         if (TerritoryManager.IsBanner(headStack)) {
-            TerritoryManager.DecayBanner(TerritoryManager.BannerToString(headStack), this.getName().getString());
+            TerritoryManager.DecayBanner(TerritoryManager.BannerToString(headStack), this.getEntityName());
         }
     }
 
@@ -111,5 +112,14 @@ public abstract class ServerPlayerEntityMixin extends PlayerEntity {
             }
         }
         return b;
+    }
+
+    @Override
+    public void equipStack(EquipmentSlot slot, ItemStack stack) {
+        TerritoryManager.LOGGER.info("equipping");
+        if (TerritoryManager.IsBanner(stack) && TerritoryManager.HasBetrayal(getEntityName(), TerritoryManager.BannerToString(stack))) {
+            return;
+        }
+        super.equipStack(slot, stack);
     }
 }

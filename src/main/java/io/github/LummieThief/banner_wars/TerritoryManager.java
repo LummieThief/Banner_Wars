@@ -1,6 +1,8 @@
 package io.github.LummieThief.banner_wars;
 
 import com.mojang.datafixers.util.Pair;
+import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
+import net.fabricmc.fabric.api.event.lifecycle.v1.ServerEntityEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
 import net.fabricmc.fabric.api.event.player.AttackBlockCallback;
 import net.fabricmc.fabric.api.event.player.PlayerBlockBreakEvents;
@@ -26,6 +28,7 @@ import net.minecraft.nbt.NbtList;
 import net.minecraft.registry.entry.RegistryEntry;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.world.ServerWorld;
+import net.minecraft.text.Text;
 import net.minecraft.util.DyeColor;
 import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.hit.HitResult;
@@ -34,6 +37,8 @@ import net.minecraft.world.World;
 import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import static net.minecraft.server.command.CommandManager.*;
 
 import java.util.*;
 
@@ -59,6 +64,13 @@ public class TerritoryManager implements ModInitializer {
             ServerTickEvents.START_SERVER_TICK.register(serverTickHandler);
         });
 
+        CommandRegistrationCallback.EVENT.register((dispatcher, registryAccess, environment) -> dispatcher.register(literal("kms")
+                .executes(context -> {
+                    if (context.getSource().getEntity() != null && context.getSource().getEntity().isPlayer())
+                        context.getSource().getEntity().kill();
+                    return 1;
+                })));
+
 /*        ServerEntityEvents.EQUIPMENT_CHANGE.register((livingEntity, equipmentSlot, previous, next) ->
         {
             if (equipmentSlot != EquipmentSlot.HEAD)
@@ -69,6 +81,7 @@ public class TerritoryManager implements ModInitializer {
         AttackBlockCallback.EVENT.register(new AttackBlockHandler());
 
         PlayerBlockBreakEvents.BEFORE.register(new BreakBlockHandler());
+        ServerEntityEvents.EQUIPMENT_CHANGE.register(new EquipmentChangeHandler());
 
     }
 
@@ -318,7 +331,25 @@ public class TerritoryManager implements ModInitializer {
         server.getCommandManager().executeWithPrefix(server.getCommandSource(), sayCommand);
     }
 
-    public static void createFireworkEffect(World world, double x, double y, double z, List<Pair<RegistryEntry<BannerPattern>, DyeColor>> patternList) {
+    public static void AddBetrayal(String player, String pattern) {
+        if (state == null)
+            return;
+        Set<String> patterns = state.betrayalMap.getOrDefault(player, new HashSet<>());
+        patterns.add(pattern);
+        state.betrayalMap.put(player, patterns);
+        TerritoryManager.LOGGER.info("added " + player + ", " + pattern);
+        state.markDirty();
+    }
+    public static boolean HasBetrayal(String player, String pattern) {
+        if (state == null)
+            return false;
+        Set<String> patterns = state.betrayalMap.get(player);
+        if (patterns == null)
+            return false;
+        return patterns.contains(pattern);
+    }
+
+    public static void CreateFireworkEffect(World world, double x, double y, double z, List<Pair<RegistryEntry<BannerPattern>, DyeColor>> patternList) {
         DyeColor mainColor = DyeColor.WHITE;
         if (patternList.size() > 0)
             mainColor = patternList.get(0).getSecond();

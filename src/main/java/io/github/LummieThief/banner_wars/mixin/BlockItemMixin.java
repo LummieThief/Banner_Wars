@@ -45,10 +45,10 @@ public class BlockItemMixin {
                 List<Pair<RegistryEntry<BannerPattern>, DyeColor>> patterns =
                         BannerBlockEntity.getPatternsFromNbt(bannerItem.getColor(), BannerBlockEntity.getPatternListNbt(stack));
                 if (entity.getCachedState().getBlock() instanceof WallBannerBlock) {
-                    TerritoryManager.createFireworkEffect(world, pos.getX() + 0.5, pos.getY() + 0.3, pos.getZ() + 0.5, patterns);
+                    TerritoryManager.CreateFireworkEffect(world, pos.getX() + 0.5, pos.getY() + 0.3, pos.getZ() + 0.5, patterns);
                 }
                 else {
-                    TerritoryManager.createFireworkEffect(world, pos.getX() + 0.5, pos.getY() + 1, pos.getZ() + 0.5, patterns);
+                    TerritoryManager.CreateFireworkEffect(world, pos.getX() + 0.5, pos.getY() + 1, pos.getZ() + 0.5, patterns);
                 }
 
             }
