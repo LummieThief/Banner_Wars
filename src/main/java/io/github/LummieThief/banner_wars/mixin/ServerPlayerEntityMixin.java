@@ -73,12 +73,15 @@ public abstract class ServerPlayerEntityMixin extends PlayerEntity {
     protected void onKilledBy(@Nullable LivingEntity adversary) {
         super.onKilledBy(adversary);
         if (!(adversary instanceof PlayerEntity)) return;
-        ItemStack headStack = this.getInventory().getArmorStack(3);
-        if (TerritoryManager.IsBanner(headStack)) {
-            TerritoryManager.DecayBanner(TerritoryManager.BannerToString(headStack), this.getEntityName());
-            String cmd = String.format("/tellraw @a [{\"text\":\"[Server] \"},{\"text\":\"%s\",\"color\":\"yellow\"}," +
-                    "{\"text\":\" has fallen in battle! Their territory is now open to attack for the next 15 minutes.\",\"color\":\"red\"}]", this.getEntityName());
-            TerritoryManager.ExecuteCommand(cmd);
+        ItemStack headStack = this.getEquippedStack(EquipmentSlot.HEAD);
+        if (TerritoryManager.IsBanner(headStack) && TerritoryManager.HasPattern(headStack)) {
+            String pattern = TerritoryManager.BannerToString(headStack);
+            assert pattern != null; // we just checked isBanner and hasPattern
+            if (TerritoryManager.DecayBanner(pattern, this.getEntityName())) {
+                String cmd = String.format("/tellraw @a [{\"text\":\"[Server] \"},{\"text\":\"%s\",\"color\":\"yellow\"}," +
+                        "{\"text\":\" has fallen in battle! Their territory is now open to attack for the next 15 minutes.\",\"color\":\"red\"}]", this.getEntityName());
+                TerritoryManager.ExecuteCommand(cmd);
+            }
         }
     }
 
@@ -110,14 +113,5 @@ public abstract class ServerPlayerEntityMixin extends PlayerEntity {
             }
         }
         return b;
-    }
-
-    @Override
-    public void equipStack(EquipmentSlot slot, ItemStack stack) {
-        TerritoryManager.LOGGER.info("equipping");
-        if (TerritoryManager.IsBanner(stack) && TerritoryManager.HasBetrayal(getEntityName(), TerritoryManager.BannerToString(stack))) {
-            return;
-        }
-        super.equipStack(slot, stack);
     }
 }

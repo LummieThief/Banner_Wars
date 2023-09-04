@@ -33,20 +33,26 @@ public class ServerPlayDisconnectHandler implements ServerPlayConnectionEvents.D
         if (player.getPrimeAdversary() == null || !player.getPrimeAdversary().isPlayer())
             return;
         ItemStack headStack = player.getEquippedStack(EquipmentSlot.HEAD);
-        if (headStack == null || headStack.isEmpty() || !TerritoryManager.IsBanner(headStack))
+        if (headStack == null || headStack.isEmpty() || !TerritoryManager.IsBanner(headStack) || !TerritoryManager.HasPattern(headStack))
             return;
 
+        // player is currently wearing a banner
         PlayerEntity adversary = (PlayerEntity) player.getPrimeAdversary();
         ItemStack adversaryHeadStack = adversary.getEquippedStack(EquipmentSlot.HEAD);
+
         String pattern = TerritoryManager.BannerToString(headStack);
-        if (adversaryHeadStack == null || adversaryHeadStack.isEmpty() ||
-                (TerritoryManager.IsBanner(adversaryHeadStack) && !TerritoryManager.BannerToString(adversaryHeadStack).equals(pattern))) {
+        assert pattern != null; // pattern cannot be null because we just checked isBanner and hasPattern
+        String adversaryPattern = TerritoryManager.BannerToString(adversaryHeadStack);
+
+        // if the attacker isn't wearing a banner or the banner they are wearing is different
+        if (adversaryPattern == null || adversaryHeadStack.isEmpty() || !adversaryPattern.equals(pattern)) {
             // players territory should go into decay
             String name = player.getEntityName();
-            String cmd = String.format("/tellraw @a [{\"text\":\"[Server] \"},{\"text\":\"%s\",\"color\":\"yellow\"}," +
-                    "{\"text\":\" has cowardly fled from battle! Their territory is now open to attack for the next 15 minutes.\",\"color\":\"red\"}]", name);
-            TerritoryManager.ExecuteCommand(cmd);
-            TerritoryManager.DecayBanner(pattern, name);
+            if (TerritoryManager.DecayBanner(pattern, name)) {
+                String cmd = String.format("/tellraw @a [{\"text\":\"[Server] \"},{\"text\":\"%s\",\"color\":\"yellow\"}," +
+                        "{\"text\":\" has cowardly fled from battle! Their territory is now open to attack for the next 15 minutes.\",\"color\":\"red\"}]", name);
+                TerritoryManager.ExecuteCommand(cmd);
+            }
         }
     }
 }

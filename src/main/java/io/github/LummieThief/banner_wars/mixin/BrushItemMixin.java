@@ -70,7 +70,9 @@ public abstract class BrushItemMixin {
             bannerEntity.setCachedState(newState);
             TerritoryManager.ScheduleETB(pos, bannerEntity);
             TerritoryManager.CreateFireworkEffect(world, pos.getX() + 0.5, wallBanner ? pos.getY() + 0.3 : pos.getY() + 1, pos.getZ() + 0.5, bannerEntity.getPatterns());
-            TerritoryManager.AddChunk(TerritoryManager.BannerToString(headStack), pos);
+            String headPattern = TerritoryManager.BannerToString(headStack);
+            assert headPattern != null; // pattern cannot be null because we already checked IsBanner and HasPattern
+            TerritoryManager.AddChunk(headPattern, pos);
 
             ItemStack stack = player.getStackInHand(context.getHand());
             stack.damage(1, player, (p) -> p.sendEquipmentBreakStatus(context.getHand().equals(Hand.MAIN_HAND) ? EquipmentSlot.MAINHAND : EquipmentSlot.OFFHAND));

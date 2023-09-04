@@ -46,11 +46,21 @@ public abstract class ItemStackMixin {
 
         ItemStack stack = (ItemStack)(Object)this;
         boolean territorialPermission = TerritoryManager.HasPermission(context.getWorld(), context.getPlayer(), context.getBlockPos());
+
         // the player has personal permission to place a block if it isn't a banner, it is a blank banner, or it is a banner that matches the banner
         // on their head and the chunk isn't currently claimed.
-        boolean personalPermission = !TerritoryManager.IsBanner(stack) || !TerritoryManager.HasPattern(stack) ||
-                (TerritoryManager.BannerToString(stack).equals(TerritoryManager.BannerToString(context.getPlayer().getInventory().getArmorStack(3))) &&
-                (TerritoryManager.GetBannerInChunk(context.getBlockPos()) == null));
+        boolean personalPermission;
+        // if stack is not a banner or is a banner without a pattern
+        if (!TerritoryManager.IsBanner(stack) || !TerritoryManager.HasPattern(stack)) {
+            personalPermission = true;
+        }
+        else {
+            // stack is a banner with a pattern
+            String thisPattern = TerritoryManager.BannerToString(stack);
+            assert thisPattern != null; // this cannot be null because we can only reach this block if stack is a banner with a pattern;
+            String headPattern = TerritoryManager.BannerToString(context.getPlayer().getInventory().getArmorStack(3));
+            personalPermission = thisPattern.equals(headPattern) && (TerritoryManager.GetBannerInChunk(context.getBlockPos()) == null);
+        }
 
         if (territorialPermission && personalPermission) {
             return item.useOnBlock(context);
@@ -78,9 +88,10 @@ public abstract class ItemStackMixin {
         ItemStack equippedStack = (ItemStack)(Object)this;
         if (TerritoryManager.HasPattern(stack)) {
             // attempting to put a banner with a pattern in the head slot
-
+            String pattern = TerritoryManager.BannerToString(stack);
+            assert pattern != null; // pattern cannot be null because we just checked that stack has a pattern.
             if (EnchantmentHelper.hasBindingCurse(equippedStack) || TerritoryManager.IsBanner(equippedStack) ||
-                    TerritoryManager.HasBetrayal(player.getEntityName(), TerritoryManager.BannerToString(stack)))
+                    TerritoryManager.HasBetrayal(player.getEntityName(), pattern))
                 return;
 
             boolean b = false;
@@ -112,8 +123,9 @@ public abstract class ItemStackMixin {
         }
         else if (clickType.equals(ClickType.LEFT) && stack.isOf(Items.FLINT_AND_STEEL) && TerritoryManager.IsBanner(equippedStack)) {
             slot.inventory.removeStack(slot.getIndex());
-            TerritoryManager.AddBetrayal(player.getEntityName(), TerritoryManager.BannerToString((ItemStack)(Object)this));
-
+            String pattern = TerritoryManager.BannerToString((ItemStack)(Object)this);
+            if (pattern == null) return; // this shouldn't be possible, but if the player somehow equips a banner without a pattern, we should check.
+            TerritoryManager.AddBetrayal(player.getEntityName(), pattern);
             LightningEntity lightningEntity = EntityType.LIGHTNING_BOLT.create(player.getWorld());
             if (lightningEntity != null) {
                 lightningEntity.refreshPositionAfterTeleport(Vec3d.ofBottomCenter(player.getBlockPos()));

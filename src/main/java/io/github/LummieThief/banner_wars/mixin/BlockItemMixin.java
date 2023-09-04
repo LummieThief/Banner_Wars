@@ -40,9 +40,10 @@ public class BlockItemMixin {
             return;
         String existingBanner = TerritoryManager.GetBannerInChunk(pos);
         if (existingBanner == null && TerritoryManager.IsBanner(stack) && TerritoryManager.HasPattern(stack)) {
-            String banner = TerritoryManager.BannerToString(stack);
-            TerritoryManager.LOGGER.info("adding chunk " + banner);
-            TerritoryManager.AddChunk(banner, pos);
+            String pattern = TerritoryManager.BannerToString(stack);
+            assert pattern != null; // banner cannot be null because we have already checked IsBanner
+            TerritoryManager.LOGGER.info("adding chunk " + pattern);
+            TerritoryManager.AddChunk(pattern, pos);
             if (world.getBlockEntity(pos) instanceof BannerBlockEntity entity &&
                 stack.getItem() instanceof BannerItem bannerItem) {
                 List<Pair<RegistryEntry<BannerPattern>, DyeColor>> patterns =

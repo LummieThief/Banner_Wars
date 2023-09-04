@@ -26,10 +26,12 @@ While a chunk is in decay, none of its regular protections apply (except for the
 While a chunk is in decay, any events that would cause it to enter decay again have no effect.
 When a chunk exits decay, it will be unable to enter decay again for 15 minutes.
 When a player is damaged by another player, the damaged player's equipped Elytra immediately breaks unless both players are wearing matching banners.
-
---MAYBE--
-TODO: When a player logs off the server while in combat with a player, if the fleeing player is wearing a banner, all chunks claimed by that banner enter decay for 15 minutes.
+When a player logs off the server while in combat with a player, if the fleeing player is wearing a banner, all chunks claimed by that banner enter decay for 15 minutes.
 
 two bald guys punching cant break each others elytra //need to test
 save system not working //need to test
-wings not breaking //need to test
+
+Errors:
+one time, a banner on the ground was claiming a chunk, but Tyler couldnt interact with it even though he was wearing the same banner. This occurred after
+an index out of bounds exception and a reloading of the server, so that could have been the culprit. After fixing that bug, was unable to replicate the bug.
+I should probably still change the logic by which a banner is turned into a string anyways.

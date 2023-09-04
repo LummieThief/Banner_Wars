@@ -5,7 +5,6 @@ import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
-import net.fabricmc.fabric.api.event.player.AttackBlockCallback;
 import net.fabricmc.fabric.api.event.player.PlayerBlockBreakEvents;
 import net.fabricmc.fabric.api.event.player.UseBlockCallback;
 import net.fabricmc.fabric.api.event.player.UseItemCallback;
@@ -27,6 +26,7 @@ import net.minecraft.nbt.NbtElement;
 import net.minecraft.nbt.NbtList;
 import net.minecraft.registry.entry.RegistryEntry;
 import net.minecraft.server.MinecraftServer;
+import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.util.DyeColor;
 import net.minecraft.util.hit.BlockHitResult;
@@ -66,22 +66,30 @@ public class TerritoryManager implements ModInitializer {
 
         CommandRegistrationCallback.EVENT.register((dispatcher, registryAccess, environment) -> dispatcher.register(literal("kms")
                 .executes(context -> {
-                    if (context.getSource().getEntity() != null && context.getSource().getEntity().isPlayer())
-                        context.getSource().getEntity().kill();
+                    if (context.getSource().getPlayer() != null) {
+                        ServerPlayerEntity player = context.getSource().getPlayer();
+                        ItemStack headStack = player.getEquippedStack(EquipmentSlot.HEAD);
+                        if (TerritoryManager.IsBanner(headStack) && TerritoryManager.HasPattern(headStack)) {
+                            String pattern = TerritoryManager.BannerToString(headStack);
+                            assert pattern != null; // we just checked isBanner and HasPattern.
+                            if (TerritoryManager.DecayBanner(pattern, player.getEntityName())) {
+                                String cmd = String.format("/tellraw @a [{\"text\":\"[Server] \"},{\"text\":\"%s\",\"color\":\"yellow\"}," +
+                                        "{\"text\":\" has chosen their own fate. Their territory is now open to attack for the next 15 minutes.\",\"color\":\"red\"}]", player.getEntityName());
+                                TerritoryManager.ExecuteCommand(cmd);
+                            }
+
+                        }
+                        player.kill();
+                    }
                     return 1;
                 })));
 
-/*        ServerEntityEvents.EQUIPMENT_CHANGE.register((livingEntity, equipmentSlot, previous, next) ->
-        {
-            if (equipmentSlot != EquipmentSlot.HEAD)
-                return;
-        });*/
         UseBlockCallback.EVENT.register(new UseBlockHandler());
         UseItemCallback.EVENT.register(new UseItemHandler());
-        AttackBlockCallback.EVENT.register(new AttackBlockHandler());
         ServerPlayConnectionEvents.DISCONNECT.register(new ServerPlayDisconnectHandler());
 
         PlayerBlockBreakEvents.BEFORE.register(new BreakBlockHandler());
+        PlayerBlockBreakEvents.AFTER.register(new AfterBreakBlockHandler());
     }
 
     /**
@@ -89,32 +97,32 @@ public class TerritoryManager implements ModInitializer {
      * @param stack the item to check.
      * @return whether the item is a banner.
      */
-    public static boolean IsBanner(@NotNull ItemStack stack) {
+    public static boolean IsBanner(ItemStack stack) {
         return IsBanner(stack.getItem());
     }
-    public static boolean IsBanner(@NotNull Item item) {
+    public static boolean IsBanner(Item item) {
+        if (item == null)
+            return false;
         int id = Item.getRawId(item);
         // 1087 is id of white banner
         // 1102 is id of black banner
         return id >= 1087 && id <= 1102;
     }
 
-    public static String BannerToString(ItemStack bannerStack) {
-        if (bannerStack == null)
-            return "";
-        String s = String.valueOf(Item.getRawId(bannerStack.getItem()));
-        NbtCompound nbt = bannerStack.getNbt();
-        int l = s.lastIndexOf(']');
-        if (nbt != null && !nbt.isEmpty() && l >= 0) {
-            s += nbt.toString();
-            s = s.substring(0, l);
-        }
+    @Nullable
+    public static String BannerToString(ItemStack stack) {
+        if (stack == null || !IsBanner(stack))
+            return null;
+        String s = String.valueOf(Item.getRawId(stack.getItem()));
+        NbtList patternList = BannerBlockEntity.getPatternListNbt(stack);
+        if (patternList != null)
+            s += patternList.asString();
         return s;
     }
 
     // Encodes a blockPos as a single long, with the first 26 bits being the X value, the next 9 bits being the Y value,
     // the next 26 bits being the Z value, and the last 3 bits being the sign of each of X, Y, and Z
-    public static Long EncodeBlockPosition(BlockPos blockPos) {
+    public static Long EncodeBlockPosition(@NotNull BlockPos blockPos) {
         int bannerX = blockPos.getX();
         int bannerY = blockPos.getY();
         int bannerZ = blockPos.getZ();
@@ -134,7 +142,7 @@ public class TerritoryManager implements ModInitializer {
     // Encodes the chunk that contains the specified block into as a single long by converting it into a block and
     // encoding the block position. If the block was below y = 0, then the Y value of the BlockPos will be -1.
     // Otherwise, it will be 1.
-    public static Long EncodeChunkPosition(BlockPos blockInChunk) {
+    public static Long EncodeChunkPosition(@NotNull BlockPos blockInChunk) {
         int y = blockInChunk.getY() < 0 ? -1 : 1;
         BlockPos chunkPos = new BlockPos(blockInChunk.getX() >> 4, y, blockInChunk.getZ() >> 4);
         return EncodeBlockPosition(chunkPos);
@@ -142,7 +150,7 @@ public class TerritoryManager implements ModInitializer {
 
     // Decodes an encoded block position. If a chunk position is desired, the user is expected to convert the BlockPos
     // into a ChunkPos for the sake of not requiring output parameters.
-    public static BlockPos DecodePosition(Long code) {
+    public static BlockPos DecodePosition(long code) {
         long bannerX = code >>> 38;
         long bannerY = (code << 26) >>> 55;
         long bannerZ = (code << 35) >>> 38;
@@ -153,12 +161,12 @@ public class TerritoryManager implements ModInitializer {
     }
 
     // Takes an encoded block position and re-encodes it as the chunk that contains that block
-    public static Long ConvertBlockEncodingToChunkEncoding(Long bannerPos) {
+    public static long ConvertBlockEncodingToChunkEncoding(long bannerPos) {
         return EncodeChunkPosition(DecodePosition(bannerPos));
     }
     @Nullable
     public static String GetBannerInChunk(BlockPos pos) {
-        if (state == null)
+        if (state == null || pos == null)
             return null;
         ChunkData data = state.chunkMap.get(EncodeChunkPosition(pos));
         if (data != null) {
@@ -168,7 +176,7 @@ public class TerritoryManager implements ModInitializer {
     }
     @Nullable
     public static BlockPos GetBannerPosInChunk(BlockPos pos) {
-        if (state == null)
+        if (state == null || pos == null)
             return null;
         ChunkData data = state.chunkMap.get(EncodeChunkPosition(pos));
         if (data != null) {
@@ -176,11 +184,8 @@ public class TerritoryManager implements ModInitializer {
         }
         return null;
     }
-/*    public static boolean HasBannerInChunk(BlockPos pos) {
-        return GetBannerInChunk(pos) != null;
-    }*/
 
-    public static void AddChunk(String banner, BlockPos bannerPos) {
+    public static void AddChunk(@NotNull String banner, @NotNull BlockPos bannerPos) {
         if (state == null)
             return;
         long chunkCode = EncodeChunkPosition(bannerPos);
@@ -189,9 +194,9 @@ public class TerritoryManager implements ModInitializer {
         state.markDirty();
     }
 
-    public static boolean HasPermission(World world, PlayerEntity player, BlockPos pos) {
+    public static boolean HasPermission(@NotNull World world, @NotNull PlayerEntity player, @NotNull BlockPos pos) {
         String banner = TerritoryManager.GetBannerInChunk(pos);
-        if (banner == null) {
+        if (banner == null ) {
             // chunk is unclaimed, so player has permission
             return true;
         }
@@ -208,7 +213,7 @@ public class TerritoryManager implements ModInitializer {
         return InDecay(world, pos, banner);
     }
 
-    public static boolean HasPermission(World world, BlockPos source, BlockPos dest) {
+    public static boolean HasPermission(@NotNull World world, @NotNull BlockPos source, @NotNull BlockPos dest) {
         String destBanner = TerritoryManager.GetBannerInChunk(dest);
         if (destBanner == null) {
             return true;
@@ -216,7 +221,7 @@ public class TerritoryManager implements ModInitializer {
         String sourceBanner = TerritoryManager.GetBannerInChunk(source);
         return destBanner.equals(sourceBanner) || InDecay(world, dest, destBanner);
     }
-    public static boolean InDecay(World world, BlockPos pos, String banner) {
+    public static boolean InDecay(@NotNull World world, BlockPos pos, @NotNull String banner) {
         if (world.isClient || !world.getRegistryKey().equals(World.OVERWORLD) || state == null) {
             return true;
         }
@@ -230,17 +235,17 @@ public class TerritoryManager implements ModInitializer {
         return data.epoch() >= lastDecayedEpoch && (pos == null || !pos.equals(GetBannerPosInChunk(pos)));
     }
 
-    public static boolean HasPattern(ItemStack bannerItem) {
+    public static boolean HasPattern(@NotNull ItemStack bannerItem) {
         NbtCompound comp = bannerItem.getOrCreateNbt();
         NbtCompound blockEntityTag = comp.getCompound("BlockEntityTag");
         if (blockEntityTag == null)
             return false;
         NbtList list = blockEntityTag.getList("Patterns", NbtElement.COMPOUND_TYPE);
-        return list.size() > 0;
+        return list != null && list.size() > 0;
     }
 
     @Nullable
-    public static BlockHitResult GetPlayerHitResult(PlayerEntity player, boolean includeFluid) {
+    public static BlockHitResult GetPlayerHitResult(@NotNull PlayerEntity player, boolean includeFluid) {
         float maxDistance = 5f;
         HitResult hit = player.raycast(maxDistance, 0, includeFluid);
         if (hit.getType() == HitResult.Type.BLOCK) {
@@ -252,7 +257,7 @@ public class TerritoryManager implements ModInitializer {
     }
 
     public static void RemoveChunk(BlockPos pos) {
-        if (state == null)
+        if (state == null || pos == null)
             return;
         LOGGER.info("removed chunk");
         state.chunkMap.remove(EncodeChunkPosition(pos));
@@ -285,24 +290,25 @@ public class TerritoryManager implements ModInitializer {
             overworld.setBlockState(pos, e.getCachedState());
             overworld.addBlockEntity(e);
             overworld.updateListeners(pos, e.getCachedState(), e.getCachedState(), Block.NOTIFY_LISTENERS);
-            LOGGER.info("etbd");
             c = true;
         }
         if (c)
             exileCache.clear();
     }
 
-    public static void ScheduleETB(BlockPos pos, BlockEntity blockEntity) {
+    public static void ScheduleETB(@NotNull BlockPos pos, @NotNull BlockEntity blockEntity) {
         exileCache.put(pos, blockEntity);
         overworld.removeBlock(pos, false);
     }
 
-    public static void DecayBanner(String banner, String name) {
+    public static boolean DecayBanner(@NotNull String banner, @NotNull String name) {
         if (state == null)
-            return;
+            return false;
         if (!state.decayMap.containsKey(banner)) {
             state.decayMap.put(banner, new DecayData(serverTickHandler.getEpoch(), name));
+            return true;
         }
+        return false;
     }
 
     public static void UnDecayBanners(long lastDecayedEpoch, long lastDecayProtectionEpoch) {
@@ -347,7 +353,9 @@ public class TerritoryManager implements ModInitializer {
         return patterns.contains(pattern);
     }
 
-    public static void CreateFireworkEffect(World world, double x, double y, double z, List<Pair<RegistryEntry<BannerPattern>, DyeColor>> patternList) {
+    public static void CreateFireworkEffect(@NotNull World world, double x, double y, double z, List<Pair<RegistryEntry<BannerPattern>, DyeColor>> patternList) {
+        if (patternList == null)
+            return;
         DyeColor mainColor = DyeColor.WHITE;
         if (patternList.size() > 0)
             mainColor = patternList.get(0).getSecond();
