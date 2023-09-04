@@ -3,7 +3,6 @@ package io.github.LummieThief.banner_wars;
 import net.fabricmc.fabric.api.event.player.AttackBlockCallback;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
-import net.minecraft.block.entity.BannerBlockEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.VerticallyAttachableBlockItem;
 import net.minecraft.util.ActionResult;

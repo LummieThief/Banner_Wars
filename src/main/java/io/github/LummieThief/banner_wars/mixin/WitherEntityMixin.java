@@ -6,7 +6,9 @@ import net.minecraft.entity.boss.WitherEntity;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
 import org.spongepowered.asm.mixin.Mixin;
-import org.spongepowered.asm.mixin.injection.*;
+import org.spongepowered.asm.mixin.injection.At;
+import org.spongepowered.asm.mixin.injection.Inject;
+import org.spongepowered.asm.mixin.injection.Redirect;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 @Mixin(WitherEntity.class)
@@ -25,7 +27,8 @@ public class WitherEntityMixin {
     private BlockState injected(World world, BlockPos pos) {
         if (world.isClient || !world.getRegistryKey().equals(World.OVERWORLD))
             return world.getBlockState(pos);
-        if (TerritoryManager.HasBannerInChunk(pos) && !TerritoryManager.InDecay(world, pos, TerritoryManager.GetBannerInChunk(pos))) {
+        String claimBanner = TerritoryManager.GetBannerInChunk(pos);
+        if (claimBanner != null && !TerritoryManager.InDecay(world, pos, claimBanner)) {
             return world.getBlockState(new BlockPos(0, -64, 0));
         }
         else {

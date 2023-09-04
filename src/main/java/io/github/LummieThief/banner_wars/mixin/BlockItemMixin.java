@@ -9,7 +9,10 @@ import net.minecraft.block.entity.BannerBlockEntity;
 import net.minecraft.block.entity.BannerPattern;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.PlayerInventory;
-import net.minecraft.item.*;
+import net.minecraft.item.BannerItem;
+import net.minecraft.item.BlockItem;
+import net.minecraft.item.ItemPlacementContext;
+import net.minecraft.item.ItemStack;
 import net.minecraft.network.packet.s2c.play.BlockUpdateS2CPacket;
 import net.minecraft.network.packet.s2c.play.ScreenHandlerSlotUpdateS2CPacket;
 import net.minecraft.registry.entry.RegistryEntry;
@@ -57,7 +60,7 @@ public class BlockItemMixin {
 
     @Inject(method = "canPlace", at = @At("RETURN"), cancellable = true)
     private void overrideCanPlace(ItemPlacementContext context, BlockState state, CallbackInfoReturnable<Boolean> cir) {
-        if (context.getWorld().isClient)
+        if (context.getWorld().isClient  || !context.getWorld().getRegistryKey().equals(World.OVERWORLD) || context.getPlayer() == null)
             return;
         PlayerEntity player = context.getPlayer();
         Hand hand = context.getHand();

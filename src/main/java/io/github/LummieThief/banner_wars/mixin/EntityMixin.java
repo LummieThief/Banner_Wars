@@ -33,8 +33,11 @@ public abstract class EntityMixin {
                 cir.setReturnValue(true);
             }
         }
-        else if (TerritoryManager.HasBannerInChunk(pos) && !TerritoryManager.InDecay(this.getEntityWorld(), null, TerritoryManager.GetBannerInChunk(pos))) {
-            cir.setReturnValue(true);
+        else {
+            String claimBanner = TerritoryManager.GetBannerInChunk(pos);
+            if (claimBanner != null && !TerritoryManager.InDecay(this.getEntityWorld(), null, claimBanner)) {
+                cir.setReturnValue(true);
+            }
         }
     }
 }

@@ -1,8 +1,9 @@
 package io.github.LummieThief.banner_wars.mixin;
 
-import io.github.LummieThief.banner_wars.TerritoryManager;
-import net.minecraft.block.*;
-import net.minecraft.block.entity.BannerBlockEntity;
+import net.minecraft.block.AbstractBlock;
+import net.minecraft.block.Block;
+import net.minecraft.block.BlockState;
+import net.minecraft.block.BlockWithEntity;
 import net.minecraft.item.VerticallyAttachableBlockItem;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.util.math.BlockPos;

@@ -1,23 +1,23 @@
 package io.github.LummieThief.banner_wars;
 
 import com.mojang.datafixers.util.Pair;
+import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
-import net.fabricmc.fabric.api.event.lifecycle.v1.ServerEntityEvents;
+import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
 import net.fabricmc.fabric.api.event.player.AttackBlockCallback;
 import net.fabricmc.fabric.api.event.player.PlayerBlockBreakEvents;
 import net.fabricmc.fabric.api.event.player.UseBlockCallback;
 import net.fabricmc.fabric.api.event.player.UseItemCallback;
+import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents;
 import net.minecraft.block.AbstractBannerBlock;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.entity.BannerBlockEntity;
 import net.minecraft.block.entity.BannerPattern;
 import net.minecraft.block.entity.BlockEntity;
-import net.minecraft.entity.player.PlayerEntity;
-import net.fabricmc.api.ModInitializer;
-import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
 import net.minecraft.entity.EquipmentSlot;
+import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.projectile.FireworkRocketEntity;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
@@ -28,19 +28,19 @@ import net.minecraft.nbt.NbtList;
 import net.minecraft.registry.entry.RegistryEntry;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.world.ServerWorld;
-import net.minecraft.text.Text;
 import net.minecraft.util.DyeColor;
 import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.hit.HitResult;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static net.minecraft.server.command.CommandManager.*;
-
 import java.util.*;
+
+import static net.minecraft.server.command.CommandManager.literal;
 
 public class TerritoryManager implements ModInitializer {
     public static final String MOD_ID = "banner_wars";
@@ -79,10 +79,9 @@ public class TerritoryManager implements ModInitializer {
         UseBlockCallback.EVENT.register(new UseBlockHandler());
         UseItemCallback.EVENT.register(new UseItemHandler());
         AttackBlockCallback.EVENT.register(new AttackBlockHandler());
+        ServerPlayConnectionEvents.DISCONNECT.register(new ServerPlayDisconnectHandler());
 
         PlayerBlockBreakEvents.BEFORE.register(new BreakBlockHandler());
-        ServerEntityEvents.EQUIPMENT_CHANGE.register(new EquipmentChangeHandler());
-
     }
 
     /**
@@ -103,11 +102,12 @@ public class TerritoryManager implements ModInitializer {
     public static String BannerToString(ItemStack bannerStack) {
         if (bannerStack == null)
             return "";
-        String s = Item.getRawId(bannerStack.getItem()) + "";
+        String s = String.valueOf(Item.getRawId(bannerStack.getItem()));
         NbtCompound nbt = bannerStack.getNbt();
-        if (nbt != null && !nbt.isEmpty()) {
+        int l = s.lastIndexOf(']');
+        if (nbt != null && !nbt.isEmpty() && l >= 0) {
             s += nbt.toString();
-            s = s.substring(0, s.lastIndexOf(']'));
+            s = s.substring(0, l);
         }
         return s;
     }
@@ -156,6 +156,7 @@ public class TerritoryManager implements ModInitializer {
     public static Long ConvertBlockEncodingToChunkEncoding(Long bannerPos) {
         return EncodeChunkPosition(DecodePosition(bannerPos));
     }
+    @Nullable
     public static String GetBannerInChunk(BlockPos pos) {
         if (state == null)
             return null;
@@ -165,6 +166,7 @@ public class TerritoryManager implements ModInitializer {
         }
         return null;
     }
+    @Nullable
     public static BlockPos GetBannerPosInChunk(BlockPos pos) {
         if (state == null)
             return null;
@@ -174,9 +176,9 @@ public class TerritoryManager implements ModInitializer {
         }
         return null;
     }
-    public static boolean HasBannerInChunk(BlockPos pos) {
+/*    public static boolean HasBannerInChunk(BlockPos pos) {
         return GetBannerInChunk(pos) != null;
-    }
+    }*/
 
     public static void AddChunk(String banner, BlockPos bannerPos) {
         if (state == null)
@@ -234,12 +236,10 @@ public class TerritoryManager implements ModInitializer {
         if (blockEntityTag == null)
             return false;
         NbtList list = blockEntityTag.getList("Patterns", NbtElement.COMPOUND_TYPE);
-        for (NbtElement c : list) {
-            return true;
-        }
-        return false;
+        return list.size() > 0;
     }
 
+    @Nullable
     public static BlockHitResult GetPlayerHitResult(PlayerEntity player, boolean includeFluid) {
         float maxDistance = 5f;
         HitResult hit = player.raycast(maxDistance, 0, includeFluid);
@@ -254,6 +254,7 @@ public class TerritoryManager implements ModInitializer {
     public static void RemoveChunk(BlockPos pos) {
         if (state == null)
             return;
+        LOGGER.info("removed chunk");
         state.chunkMap.remove(EncodeChunkPosition(pos));
     }
 
@@ -301,9 +302,6 @@ public class TerritoryManager implements ModInitializer {
             return;
         if (!state.decayMap.containsKey(banner)) {
             state.decayMap.put(banner, new DecayData(serverTickHandler.getEpoch(), name));
-            String cmd = String.format("/tellraw @a [{\"text\":\"[Server] \"},{\"text\":\"%s\",\"color\":\"light_purple\"}," +
-                    "{\"text\":\"'s territory has entered decay for 15 minutes! \",\"color\":\"aqua\"}]", name);
-            ExecuteCommand(cmd);
         }
     }
 
@@ -315,19 +313,19 @@ public class TerritoryManager implements ModInitializer {
             DecayData data = state.decayMap.get(banner);
             if (data.epoch() < lastDecayProtectionEpoch) {
                 state.decayMap.remove(banner);
-                String cmd = String.format("/tellraw @a [{\"text\":\"[Server] \"},{\"text\":\"%s\",\"color\":\"light_purple\"}," +
-                        "{\"text\":\"'s territory is no longer protected from decay. \",\"color\":\"aqua\"}]", data.name());
+                String cmd = String.format("/tellraw @a [{\"text\":\"[Server] \"},{\"text\":\"%s\",\"color\":\"yellow\"}," +
+                        "{\"text\":\"'s territory has recovered.\",\"color\":\"green\"}]", data.name());
                 ExecuteCommand(cmd);
             }
             else if (data.epoch() == lastDecayedEpoch - 1) {
-                String cmd = String.format("/tellraw @a [{\"text\":\"[Server] \"},{\"text\":\"%s\",\"color\":\"light_purple\"}," +
-                        "{\"text\":\"'s territory is now protected from decay for 15 minutes! \",\"color\":\"aqua\"}]", data.name());
+                String cmd = String.format("/tellraw @a [{\"text\":\"[Server] \"},{\"text\":\"%s\",\"color\":\"yellow\"}," +
+                        "{\"text\":\"'s territory can no longer be attacked and now has 15 minutes to recover.\",\"color\":\"aqua\"}]", data.name());
                 ExecuteCommand(cmd);
             }
         }
     }
 
-    private static void ExecuteCommand(String sayCommand) {
+    public static void ExecuteCommand(String sayCommand) {
         server.getCommandManager().executeWithPrefix(server.getCommandSource(), sayCommand);
     }
 
@@ -354,8 +352,8 @@ public class TerritoryManager implements ModInitializer {
         if (patternList.size() > 0)
             mainColor = patternList.get(0).getSecond();
         Set<DyeColor> uniqueColors = new HashSet<>();
-        for (int i = 0; i < patternList.size(); i++) {
-            uniqueColors.add(patternList.get(i).getSecond());
+        for (Pair<RegistryEntry<BannerPattern>, DyeColor> registryEntryDyeColorPair : patternList) {
+            uniqueColors.add(registryEntryDyeColorPair.getSecond());
         }
         int m = 2;
         int[] fireworkColors = new int[uniqueColors.size() + m];

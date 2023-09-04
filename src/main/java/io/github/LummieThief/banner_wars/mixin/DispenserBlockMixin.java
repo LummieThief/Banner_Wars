@@ -12,13 +12,14 @@ import net.minecraft.util.math.BlockPointerImpl;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
 import net.minecraft.world.World;
-import org.apache.logging.log4j.core.jmx.Server;
 import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.ModifyVariable;
 
 @Mixin(DispenserBlock.class)
 public class DispenserBlockMixin {
+    @Unique
     private static int shulkerMin, shulkerMax;
 
     @ModifyVariable(method = "dispense", at = @At(value = "STORE"), ordinal = 0)
@@ -30,7 +31,7 @@ public class DispenserBlockMixin {
             return oldInt;
         // recalculate local variables
         BlockPointerImpl blockPointerImpl = new BlockPointerImpl(world, pos);
-        DispenserBlockEntity dispenserBlockEntity = (DispenserBlockEntity)blockPointerImpl.getBlockEntity();
+        DispenserBlockEntity dispenserBlockEntity = blockPointerImpl.getBlockEntity();
         // get the selected item
         ItemStack itemStack = dispenserBlockEntity.getStack(oldInt);
 

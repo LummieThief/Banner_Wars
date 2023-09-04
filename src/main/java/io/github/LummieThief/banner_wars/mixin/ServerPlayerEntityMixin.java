@@ -8,28 +8,22 @@ import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.damage.DamageSource;
 import net.minecraft.entity.effect.StatusEffectInstance;
 import net.minecraft.entity.effect.StatusEffects;
-import net.minecraft.entity.mob.MobEntity;
 import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
 import net.minecraft.network.packet.s2c.play.ScreenHandlerSlotUpdateS2CPacket;
 import net.minecraft.screen.ScreenHandler;
 import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.util.Hand;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
 import org.jetbrains.annotations.Nullable;
 import org.spongepowered.asm.mixin.Mixin;
-import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 @Mixin(ServerPlayerEntity.class)
 public abstract class ServerPlayerEntityMixin extends PlayerEntity {
-    @Unique
-    private final int STATUS_EFFECT_CHECK_TIME = 60;
     public ServerPlayerEntityMixin(World world, BlockPos pos, float yaw, GameProfile gameProfile) {
         super(world, pos, yaw, gameProfile);
     }
@@ -57,6 +51,7 @@ public abstract class ServerPlayerEntityMixin extends PlayerEntity {
 
     @Inject(method = "playerTick", at = @At("RETURN"))
     public void applyTerritoryStatus(CallbackInfo ci) {
+        int STATUS_EFFECT_CHECK_TIME = 60;
         if (this.age % STATUS_EFFECT_CHECK_TIME == 0) {
             String banner =  TerritoryManager.GetBannerInChunk(this.getBlockPos());
             if (banner != null) {
@@ -81,6 +76,9 @@ public abstract class ServerPlayerEntityMixin extends PlayerEntity {
         ItemStack headStack = this.getInventory().getArmorStack(3);
         if (TerritoryManager.IsBanner(headStack)) {
             TerritoryManager.DecayBanner(TerritoryManager.BannerToString(headStack), this.getEntityName());
+            String cmd = String.format("/tellraw @a [{\"text\":\"[Server] \"},{\"text\":\"%s\",\"color\":\"yellow\"}," +
+                    "{\"text\":\" has fallen in battle! Their territory is now open to attack for the next 15 minutes.\",\"color\":\"red\"}]", this.getEntityName());
+            TerritoryManager.ExecuteCommand(cmd);
         }
     }
 

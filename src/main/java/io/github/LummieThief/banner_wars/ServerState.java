@@ -1,16 +1,18 @@
 package io.github.LummieThief.banner_wars;
 
-import net.fabricmc.fabric.api.util.NbtType;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.nbt.NbtElement;
 import net.minecraft.nbt.NbtList;
-import net.minecraft.nbt.NbtTypes;
 import net.minecraft.server.MinecraftServer;
+import net.minecraft.server.world.ServerWorld;
 import net.minecraft.world.PersistentState;
 import net.minecraft.world.PersistentStateManager;
 import net.minecraft.world.World;
 
-import java.util.*;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
 
 /*
 nbt{
@@ -34,7 +36,7 @@ nbt{
 }
 */
 public class ServerState extends PersistentState {
-    private static boolean RESET = false;
+    private static final boolean RESET = false;
     public Map<Long, ChunkData> chunkMap = new HashMap<>();
     public Map<String, DecayData> decayMap = new HashMap<>();
     public Map<String, Set<String>> betrayalMap = new HashMap<>();
@@ -112,17 +114,17 @@ public class ServerState extends PersistentState {
 
     public static ServerState getServerState(MinecraftServer server) {
         // First we get the persistentStateManager for the OVERWORLD
-        PersistentStateManager persistentStateManager = server
-                .getWorld(World.OVERWORLD).getPersistentStateManager();
+        ServerWorld overworld = server.getWorld(World.OVERWORLD);
+        assert overworld != null;
+        PersistentStateManager persistentStateManager = overworld.getPersistentStateManager();
 
         // Calling this reads the file from the disk if it exists, or creates a new one and saves it to the disk
         // You need to use a unique string as the key. You should already have a MODID variable defined by you somewhere in your code. Use that.
-        ServerState state = persistentStateManager.getOrCreate(
+
+        return persistentStateManager.getOrCreate(
                 ServerState::createFromNbt,
                 ServerState::new,
                 TerritoryManager.MOD_ID);
-
-        return state;
 
     }
 }

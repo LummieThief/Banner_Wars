@@ -1,19 +1,12 @@
 package io.github.LummieThief.banner_wars.mixin;
 
-import io.github.LummieThief.banner_wars.TerritoryManager;
-import net.minecraft.block.*;
-import net.minecraft.entity.EquipmentSlot;
-import net.minecraft.item.Equipment;
-import net.minecraft.network.packet.s2c.play.BlockUpdateS2CPacket;
-import net.minecraft.server.world.ServerWorld;
-import net.minecraft.util.DyeColor;
+import net.minecraft.block.BlockState;
+import net.minecraft.block.WallBannerBlock;
 import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.random.Random;
 import net.minecraft.world.WorldView;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
-import org.spongepowered.asm.mixin.injection.Redirect;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 @Mixin(WallBannerBlock.class)

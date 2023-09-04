@@ -17,7 +17,8 @@ public class LightningEntityMixin {
     private boolean overrideSpawnFire(World world, BlockPos pos, BlockState state) {
         if (world.isClient || !world.getRegistryKey().equals(World.OVERWORLD))
             return world.setBlockState(pos, state);
-        if (TerritoryManager.HasBannerInChunk(pos) && !TerritoryManager.InDecay(world, pos, TerritoryManager.GetBannerInChunk(pos))) {
+        String claimBanner = TerritoryManager.GetBannerInChunk(pos);
+        if (claimBanner != null && !TerritoryManager.InDecay(world, pos, claimBanner)) {
             blocksSetOnFire--;
             return false;
         }

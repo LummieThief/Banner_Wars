@@ -10,20 +10,15 @@ import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.inventory.StackReference;
 import net.minecraft.item.*;
-import net.minecraft.nbt.NbtCompound;
 import net.minecraft.network.packet.s2c.play.ScreenHandlerSlotUpdateS2CPacket;
 import net.minecraft.screen.ScreenHandler;
 import net.minecraft.screen.slot.Slot;
 import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.sound.SoundCategory;
-import net.minecraft.sound.SoundEvents;
 import net.minecraft.util.ActionResult;
 import net.minecraft.util.ClickType;
 import net.minecraft.util.Hand;
 import net.minecraft.util.math.Vec3d;
-import net.minecraft.util.math.random.Random;
 import net.minecraft.world.World;
-import net.minecraft.world.event.GameEvent;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
@@ -32,7 +27,7 @@ import org.spongepowered.asm.mixin.injection.Redirect;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 // The first line of defense for grief protection. This cancels actions such as putting glow ink on a sign, stripping
-// logs with an axe, or placing an armor stand. It doesnt stop blocks from being placed other than vertically attachable
+// logs with an axe, or placing an armor stand. It doesn't stop blocks from being placed other than vertically attachable
 // blocks which need their own special handling. This is also the place where banners are prevented from being placed
 // if the player is not wearing a matching banner.
 @Mixin(ItemStack.class)
@@ -45,18 +40,17 @@ public abstract class ItemStackMixin {
             return item.useOnBlock(context);
 
         PlayerEntity playerEntity = context.getPlayer();
-        if (!(playerEntity instanceof ServerPlayerEntity) || (item instanceof BlockItem && !(item instanceof VerticallyAttachableBlockItem))) {
+        if (!(playerEntity instanceof ServerPlayerEntity player) || (item instanceof BlockItem && !(item instanceof VerticallyAttachableBlockItem))) {
             return item.useOnBlock(context);
         }
-        ServerPlayerEntity player = (ServerPlayerEntity)playerEntity;
 
         ItemStack stack = (ItemStack)(Object)this;
         boolean territorialPermission = TerritoryManager.HasPermission(context.getWorld(), context.getPlayer(), context.getBlockPos());
-        boolean personalPermission = !TerritoryManager.IsBanner(stack) ||
+        // the player has personal permission to place a block if it isn't a banner, it is a blank banner, or it is a banner that matches the banner
+        // on their head and the chunk isn't currently claimed.
+        boolean personalPermission = !TerritoryManager.IsBanner(stack) || !TerritoryManager.HasPattern(stack) ||
                 (TerritoryManager.BannerToString(stack).equals(TerritoryManager.BannerToString(context.getPlayer().getInventory().getArmorStack(3))) &&
-                        !TerritoryManager.HasBannerInChunk(context.getBlockPos()) ||
-                        !TerritoryManager.HasPattern(stack));
-
+                (TerritoryManager.GetBannerInChunk(context.getBlockPos()) == null));
 
         if (territorialPermission && personalPermission) {
             return item.useOnBlock(context);
@@ -126,6 +120,10 @@ public abstract class ItemStackMixin {
                 lightningEntity.setChanneler((ServerPlayerEntity) player);
                 player.getWorld().spawnEntity(lightningEntity);
             }
+
+            String cmd = String.format("/tellraw @a [{\"text\":\"[Server] \"},{\"text\":\"%s\",\"color\":\"yellow\"}," +
+                    "{\"text\":\" has abandoned their alliance and will NOT be coming back.\",\"color\":\"red\"}]", player.getEntityName());
+            TerritoryManager.ExecuteCommand(cmd);
         }
     }
 }

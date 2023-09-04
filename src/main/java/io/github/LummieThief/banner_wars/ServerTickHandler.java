@@ -2,7 +2,6 @@ package io.github.LummieThief.banner_wars;
 
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
 import net.minecraft.server.MinecraftServer;
-import net.minecraft.server.world.ServerWorld;
 import net.minecraft.world.World;
 
 public class ServerTickHandler implements ServerTickEvents.StartTick {
@@ -16,6 +15,7 @@ public class ServerTickHandler implements ServerTickEvents.StartTick {
     @Override
     public void onStartTick(MinecraftServer server) {
         World world = server.getWorld(World.OVERWORLD);
+        assert world != null;
         time = world.getTime();
         if (time % TICKS_PER_EPOCH == 0) {
             TerritoryManager.LOGGER.info("ServerTick: " + (time / TICKS_PER_EPOCH));

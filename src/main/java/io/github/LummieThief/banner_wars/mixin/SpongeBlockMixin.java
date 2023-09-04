@@ -12,12 +12,6 @@ import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Overwrite;
 import org.spongepowered.asm.mixin.Shadow;
-import org.spongepowered.asm.mixin.injection.At;
-import org.spongepowered.asm.mixin.injection.Redirect;
-
-import java.util.function.BiConsumer;
-import java.util.function.Consumer;
-import java.util.function.Predicate;
 
 import static net.minecraft.block.Block.dropStacks;
 
@@ -32,11 +26,7 @@ public class SpongeBlockMixin {
     @Overwrite
     private boolean absorbWater(World world, BlockPos pos) {
         return BlockPos.iterateRecursively(pos, 6, 65, (currentPos, queuer) -> {
-            Direction[] var2 = field_43257;
-            int var3 = var2.length;
-
-            for(int var4 = 0; var4 < var3; ++var4) {
-                Direction direction = var2[var4];
+            for (Direction direction : field_43257) {
                 queuer.accept(currentPos.offset(direction));
             }
 
@@ -50,8 +40,7 @@ public class SpongeBlockMixin {
                     return false;
                 } else {
                     Block block = blockState.getBlock();
-                    if (block instanceof FluidDrainable) {
-                        FluidDrainable fluidDrainable = (FluidDrainable)block;
+                    if (block instanceof FluidDrainable fluidDrainable) {
                         if (TerritoryManager.HasPermission(world, pos, currentPos) && !fluidDrainable.tryDrainFluid(world, currentPos, blockState).isEmpty()) {
                             return true;
                         }

@@ -1,7 +1,6 @@
 package io.github.LummieThief.banner_wars.mixin;
 
 import io.github.LummieThief.banner_wars.TerritoryManager;
-import net.minecraft.block.AbstractFireBlock;
 import net.minecraft.block.BlockState;
 import net.minecraft.fluid.FluidState;
 import net.minecraft.fluid.LavaFluid;
@@ -18,10 +17,9 @@ public class LavaFluidMixin {
             value = "INVOKE",
             target = "Lnet/minecraft/world/World;setBlockState(Lnet/minecraft/util/math/BlockPos;Lnet/minecraft/block/BlockState;)Z"))
     private boolean overrideLightFire(World world, BlockPos pos, BlockState state,
-                                         World _world, BlockPos _pos, FluidState _state, Random random) {
+                                         World _world, BlockPos lavaPos, FluidState _state, Random random) {
         if (world.isClient || !world.getRegistryKey().equals(World.OVERWORLD))
             return world.setBlockState(pos, state);
-        BlockPos lavaPos = _pos;
         if (TerritoryManager.HasPermission(world, lavaPos, pos)) {
             return world.setBlockState(pos, state);
         }

@@ -11,11 +11,9 @@ import net.minecraft.util.math.random.Random;
 import net.minecraft.world.World;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
+import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
-import org.spongepowered.asm.mixin.injection.Inject;
-import org.spongepowered.asm.mixin.injection.ModifyVariable;
 import org.spongepowered.asm.mixin.injection.Redirect;
-import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 @Mixin(FireBlock.class)
 public class FireBlockMixin {
@@ -35,10 +33,9 @@ public class FireBlockMixin {
             value = "INVOKE",
             target = "Lnet/minecraft/block/FireBlock;trySpreadingFire(Lnet/minecraft/world/World;Lnet/minecraft/util/math/BlockPos;ILnet/minecraft/util/math/random/Random;I)V"))
     public void redirectFireBurn(FireBlock instance, World world, BlockPos pos, int spreadFactor, Random random, int currentAge,
-                                      BlockState _state, ServerWorld _world, BlockPos _pos, Random _random) {
+                                      BlockState _state, ServerWorld _world, BlockPos firePos, Random _random) {
         int i = this.getSpreadChance(world.getBlockState(pos));
         if (random.nextInt(spreadFactor) < i) {
-            BlockPos firePos = _pos;
             if (!TerritoryManager.HasPermission(world, firePos, pos)) {
                 tryExtinguishFire(world, firePos);
             }
@@ -57,10 +54,9 @@ public class FireBlockMixin {
             target = "Lnet/minecraft/server/world/ServerWorld;setBlockState(Lnet/minecraft/util/math/BlockPos;Lnet/minecraft/block/BlockState;I)Z",
             ordinal = 1))
     public boolean redirectFireSpread(ServerWorld world, BlockPos pos, BlockState blockState, int i,
-                                         BlockState _state, ServerWorld _world, BlockPos _pos, Random _random) {
+                                         BlockState _state, ServerWorld _world, BlockPos firePos, Random _random) {
         if (world.isClient || !world.getRegistryKey().equals(World.OVERWORLD))
             return world.setBlockState(pos, blockState, i);
-        BlockPos firePos = _pos;
         if (TerritoryManager.HasPermission(world, firePos, pos)) {
             BlockPos n = pos.north();
             BlockPos e = pos.east();
@@ -81,6 +77,7 @@ public class FireBlockMixin {
         }
         return false;
     }
+    @Unique
     private void tryExtinguishFire(World world, BlockPos firePos) {
         Block downBlock = world.getBlockState(firePos.down()).getBlock();
         if(!(downBlock.equals(Blocks.NETHERRACK) || downBlock.equals(Blocks.MAGMA_BLOCK))) {

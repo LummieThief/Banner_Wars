@@ -5,13 +5,15 @@ import net.minecraft.block.Waterloggable;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.fluid.Fluids;
-import net.minecraft.item.*;
+import net.minecraft.item.BucketItem;
+import net.minecraft.item.FluidModificationItem;
+import net.minecraft.item.Item;
+import net.minecraft.item.ItemStack;
 import net.minecraft.network.packet.s2c.play.ScreenHandlerSlotUpdateS2CPacket;
 import net.minecraft.screen.ScreenHandler;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.util.Hand;
 import net.minecraft.util.TypedActionResult;
-import net.minecraft.util.UseAction;
 import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
@@ -22,7 +24,7 @@ public class UseItemHandler implements UseItemCallback {
     @Override
     public TypedActionResult<ItemStack> interact(PlayerEntity player, World world, Hand hand) {
         ItemStack handItem = player.getStackInHand(hand);
-        if (!(player instanceof ServerPlayerEntity) || world.isClient || !world.getRegistryKey().equals(World.OVERWORLD)) {
+        if (!(player instanceof ServerPlayerEntity serverPlayer) || world.isClient || !world.getRegistryKey().equals(World.OVERWORLD)) {
             return TypedActionResult.pass(handItem);
         }
         Item item = handItem.getItem();
@@ -33,13 +35,11 @@ public class UseItemHandler implements UseItemCallback {
         }
 
         boolean includeFluid = false;
-        if (item instanceof BucketItem) {
-            BucketItem bucket = (BucketItem)item;
+        if (item instanceof BucketItem bucket) {
             if (((IBucketItemMixin)bucket).getFluid().equals(Fluids.EMPTY)) {
                 includeFluid = true;
             }
         }
-        ServerPlayerEntity serverPlayer = (ServerPlayerEntity) player;
 
         BlockHitResult hit = TerritoryManager.GetPlayerHitResult(serverPlayer, includeFluid);
         if (hit == null) {
