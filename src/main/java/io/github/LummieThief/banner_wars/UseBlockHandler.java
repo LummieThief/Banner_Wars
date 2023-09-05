@@ -45,6 +45,8 @@ public class UseBlockHandler implements UseBlockCallback {
                         screenHandler.getRevision(),
                         slot,
                         player.getStackInHand(hand)));
+                //TODO: This is where placing a block on the perimeter fails.
+
                 return ActionResult.FAIL;
             }
         }

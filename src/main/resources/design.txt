@@ -28,10 +28,11 @@ When a chunk exits decay, it will be unable to enter decay again for 15 minutes.
 When a player is damaged by another player, the damaged player's equipped Elytra immediately breaks unless both players are wearing matching banners.
 When a player logs off the server while in combat with a player, if the fleeing player is wearing a banner, all chunks claimed by that banner enter decay for 15 minutes.
 
-two bald guys punching cant break each others elytra //need to test
-save system not working //need to test
-
-Errors:
-one time, a banner on the ground was claiming a chunk, but Tyler couldnt interact with it even though he was wearing the same banner. This occurred after
-an index out of bounds exception and a reloading of the server, so that could have been the culprit. After fixing that bug, was unable to replicate the bug.
-I should probably still change the logic by which a banner is turned into a string anyways.
+Sticky piston can pull block out of chunk
+TODO: Placing a block off of a block that is claimed doesnt work
+Chorus fruit nerf
+entities should be killable
+elytra dupe
+TODO: territory status command
+Concurrency issue when 2 entries are in decay
+double check falling sand entity

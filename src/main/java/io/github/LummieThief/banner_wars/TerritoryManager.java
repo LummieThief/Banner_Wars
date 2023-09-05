@@ -314,11 +314,12 @@ public class TerritoryManager implements ModInitializer {
     public static void UnDecayBanners(long lastDecayedEpoch, long lastDecayProtectionEpoch) {
         if (state == null)
             return;
+        Queue<String> toRemove = new LinkedList<>();
         TerritoryManager.lastDecayedEpoch = lastDecayedEpoch;
         for (String banner : state.decayMap.keySet()) {
             DecayData data = state.decayMap.get(banner);
             if (data.epoch() < lastDecayProtectionEpoch) {
-                state.decayMap.remove(banner);
+                toRemove.add(banner);
                 String cmd = String.format("/tellraw @a [{\"text\":\"[Server] \"},{\"text\":\"%s\",\"color\":\"yellow\"}," +
                         "{\"text\":\"'s territory has recovered.\",\"color\":\"green\"}]", data.name());
                 ExecuteCommand(cmd);
@@ -328,6 +329,10 @@ public class TerritoryManager implements ModInitializer {
                         "{\"text\":\"'s territory can no longer be attacked and now has 15 minutes to recover.\",\"color\":\"aqua\"}]", data.name());
                 ExecuteCommand(cmd);
             }
+        }
+
+        for (String s : toRemove) {
+            state.decayMap.remove(s);
         }
     }
 

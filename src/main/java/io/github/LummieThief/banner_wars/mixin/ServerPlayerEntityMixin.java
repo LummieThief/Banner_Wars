@@ -102,7 +102,7 @@ public abstract class ServerPlayerEntityMixin extends PlayerEntity {
                         Criteria.ITEM_DURABILITY_CHANGED.trigger((ServerPlayerEntity)(Object)this, chestStack, 1);
                         sendEquipmentBreakStatus(EquipmentSlot.CHEST);
                         ScreenHandler screenHandler = currentScreenHandler;
-                        int slot = 38;
+                        int slot = 6;
                         ((ServerPlayerEntity)(Object)this).networkHandler.sendPacket(new ScreenHandlerSlotUpdateS2CPacket(
                                 screenHandler.syncId,
                                 screenHandler.getRevision(),

@@ -3,6 +3,8 @@ package io.github.LummieThief.banner_wars.mixin;
 import io.github.LummieThief.banner_wars.IFallingBlockEntityMixin;
 import io.github.LummieThief.banner_wars.TerritoryManager;
 import net.minecraft.block.BlockState;
+import net.minecraft.entity.Entity;
+import net.minecraft.entity.EntityType;
 import net.minecraft.entity.FallingBlockEntity;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.nbt.NbtHelper;
@@ -17,8 +19,12 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 @Mixin(FallingBlockEntity.class)
-public abstract class FallingBlockEntityMixin extends EntityMixin implements IFallingBlockEntityMixin {
+public abstract class FallingBlockEntityMixin extends Entity implements IFallingBlockEntityMixin {
     @Unique private BlockPos spawnPos;
+
+    public FallingBlockEntityMixin(EntityType<?> type, World world) {
+        super(type, world);
+    }
 
     @Inject(method = "spawnFromBlock", at = @At("RETURN"))
     private static void spawnFromBlock(World world, BlockPos pos, BlockState state, CallbackInfoReturnable<FallingBlockEntity> cir) {
@@ -30,7 +36,7 @@ public abstract class FallingBlockEntityMixin extends EntityMixin implements IFa
         if (getEntityWorld().isClient || !getEntityWorld().getRegistryKey().equals(World.OVERWORLD))
             return oldBool;
         if (oldBool) {
-            BlockPos landingPos = ((FallingBlockEntity)(Object)this).getBlockPos();
+            BlockPos landingPos = getBlockPos();
             return TerritoryManager.HasPermission(getEntityWorld(), spawnPos, landingPos);
         }
         return false;
