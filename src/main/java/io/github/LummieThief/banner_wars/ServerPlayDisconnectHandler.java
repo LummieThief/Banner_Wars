@@ -51,7 +51,7 @@ public class ServerPlayDisconnectHandler implements ServerPlayConnectionEvents.D
             if (TerritoryManager.DecayBanner(pattern, name)) {
                 String cmd = String.format("/tellraw @a [{\"text\":\"[Server] \"},{\"text\":\"%s\",\"color\":\"yellow\"}," +
                         "{\"text\":\" has cowardly fled from battle! Their territory is now open to attack for the next 15 minutes.\",\"color\":\"red\"}]", name);
-                TerritoryManager.ExecuteCommand(cmd);
+                CommandManager.ExecuteCommand(cmd);
             }
         }
     }

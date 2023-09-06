@@ -1,5 +1,6 @@
 package io.github.LummieThief.banner_wars.mixin;
 
+import io.github.LummieThief.banner_wars.CommandManager;
 import io.github.LummieThief.banner_wars.TerritoryManager;
 import net.minecraft.block.entity.BannerBlockEntity;
 import net.minecraft.enchantment.EnchantmentHelper;
@@ -135,7 +136,7 @@ public abstract class ItemStackMixin {
 
             String cmd = String.format("/tellraw @a [{\"text\":\"[Server] \"},{\"text\":\"%s\",\"color\":\"yellow\"}," +
                     "{\"text\":\" has abandoned their alliance and will NOT be coming back.\",\"color\":\"red\"}]", player.getEntityName());
-            TerritoryManager.ExecuteCommand(cmd);
+            CommandManager.ExecuteCommand(cmd);
         }
     }
 }

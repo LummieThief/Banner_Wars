@@ -26,13 +26,8 @@ While a chunk is in decay, none of its regular protections apply (except for the
 While a chunk is in decay, any events that would cause it to enter decay again have no effect.
 When a chunk exits decay, it will be unable to enter decay again for 15 minutes.
 When a player is damaged by another player, the damaged player's equipped Elytra immediately breaks unless both players are wearing matching banners.
+Elytra cant be repaired by mending when broken.
 When a player logs off the server while in combat with a player, if the fleeing player is wearing a banner, all chunks claimed by that banner enter decay for 15 minutes.
 
-Sticky piston can pull block out of chunk
 TODO: Placing a block off of a block that is claimed doesnt work
-Chorus fruit nerf
-entities should be killable
-elytra dupe
-TODO: territory status command
-Concurrency issue when 2 entries are in decay
-double check falling sand entity
+TODO: test whether commands can be run without op

@@ -42,7 +42,6 @@ public class BlockItemMixin {
         if (existingBanner == null && TerritoryManager.IsBanner(stack) && TerritoryManager.HasPattern(stack)) {
             String pattern = TerritoryManager.BannerToString(stack);
             assert pattern != null; // banner cannot be null because we have already checked IsBanner
-            TerritoryManager.LOGGER.info("adding chunk " + pattern);
             TerritoryManager.AddChunk(pattern, pos);
             if (world.getBlockEntity(pos) instanceof BannerBlockEntity entity &&
                 stack.getItem() instanceof BannerItem bannerItem) {
