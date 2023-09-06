@@ -26,7 +26,6 @@ import net.minecraft.nbt.NbtElement;
 import net.minecraft.nbt.NbtList;
 import net.minecraft.registry.entry.RegistryEntry;
 import net.minecraft.server.MinecraftServer;
-import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.util.DyeColor;
 import net.minecraft.util.hit.BlockHitResult;
@@ -49,6 +48,7 @@ public class TerritoryManager implements ModInitializer {
     public static ServerState state;
     public static ServerWorld overworld;
     public static ServerTickHandler serverTickHandler;
+    public static InteractionBlocklist blocklist;
 
     private static final Map<BlockPos, BlockEntity> exileCache = new HashMap<>();
     private static long lastDecayedEpoch;
@@ -57,32 +57,18 @@ public class TerritoryManager implements ModInitializer {
     public void onInitialize() {
         ServerLifecycleEvents.SERVER_STARTED.register(srvr -> {
             server = srvr;
-            state = ServerState.getServerState(server);
-            overworld = server.getOverworld();
-
-            serverTickHandler = new ServerTickHandler();
-            ServerTickEvents.START_SERVER_TICK.register(serverTickHandler);
+            state = ServerState.getServerState(srvr);
+            overworld = srvr.getOverworld();
         });
 
-        CommandRegistrationCallback.EVENT.register((dispatcher, registryAccess, environment) -> dispatcher.register(literal("kms")
-                .executes(context -> {
-                    if (context.getSource().getPlayer() != null) {
-                        ServerPlayerEntity player = context.getSource().getPlayer();
-                        ItemStack headStack = player.getEquippedStack(EquipmentSlot.HEAD);
-                        if (TerritoryManager.IsBanner(headStack) && TerritoryManager.HasPattern(headStack)) {
-                            String pattern = TerritoryManager.BannerToString(headStack);
-                            assert pattern != null; // we just checked isBanner and HasPattern.
-                            if (TerritoryManager.DecayBanner(pattern, player.getEntityName())) {
-                                String cmd = String.format("/tellraw @a [{\"text\":\"[Server] \"},{\"text\":\"%s\",\"color\":\"yellow\"}," +
-                                        "{\"text\":\" has chosen their own fate. Their territory is now open to attack for the next 15 minutes.\",\"color\":\"red\"}]", player.getEntityName());
-                                TerritoryManager.ExecuteCommand(cmd);
-                            }
+        blocklist = new InteractionBlocklist();
+        serverTickHandler = new ServerTickHandler();
+        ServerTickEvents.START_SERVER_TICK.register(serverTickHandler);
 
-                        }
-                        player.kill();
-                    }
-                    return 1;
-                })));
+        CommandRegistrationCallback.EVENT.register((dispatcher, registryAccess, environment) -> dispatcher.register(literal("kms")
+                .executes(CommandManager::kmsCommand)));
+        CommandRegistrationCallback.EVENT.register((dispatcher, registryAccess, environment) -> dispatcher.register(literal("status")
+                .executes(CommandManager::statusCommand)));
 
         UseBlockCallback.EVENT.register(new UseBlockHandler());
         UseItemCallback.EVENT.register(new UseItemHandler());
@@ -190,8 +176,8 @@ public class TerritoryManager implements ModInitializer {
             return;
         long chunkCode = EncodeChunkPosition(bannerPos);
         long blockCode = EncodeBlockPosition(bannerPos);
-        state.chunkMap.put(chunkCode, new ChunkData(banner, blockCode, serverTickHandler.getEpoch()));
-        state.markDirty();
+        ChunkData data = new ChunkData(banner, blockCode, serverTickHandler.getEpoch());
+        state.AddChunk(chunkCode, data);
     }
 
     public static boolean HasPermission(@NotNull World world, @NotNull PlayerEntity player, @NotNull BlockPos pos) {
@@ -259,8 +245,7 @@ public class TerritoryManager implements ModInitializer {
     public static void RemoveChunk(BlockPos pos) {
         if (state == null || pos == null)
             return;
-        LOGGER.info("removed chunk");
-        state.chunkMap.remove(EncodeChunkPosition(pos));
+        state.RemoveChunk(EncodeChunkPosition(pos));
     }
 
     public static void FlickerFadingBanners(long lastLivingEpoch) {
@@ -322,12 +307,12 @@ public class TerritoryManager implements ModInitializer {
                 toRemove.add(banner);
                 String cmd = String.format("/tellraw @a [{\"text\":\"[Server] \"},{\"text\":\"%s\",\"color\":\"yellow\"}," +
                         "{\"text\":\"'s territory has recovered.\",\"color\":\"green\"}]", data.name());
-                ExecuteCommand(cmd);
+                CommandManager.ExecuteCommand(cmd);
             }
             else if (data.epoch() == lastDecayedEpoch - 1) {
                 String cmd = String.format("/tellraw @a [{\"text\":\"[Server] \"},{\"text\":\"%s\",\"color\":\"yellow\"}," +
                         "{\"text\":\"'s territory can no longer be attacked and now has 15 minutes to recover.\",\"color\":\"aqua\"}]", data.name());
-                ExecuteCommand(cmd);
+                CommandManager.ExecuteCommand(cmd);
             }
         }
 
@@ -336,17 +321,12 @@ public class TerritoryManager implements ModInitializer {
         }
     }
 
-    public static void ExecuteCommand(String sayCommand) {
-        server.getCommandManager().executeWithPrefix(server.getCommandSource(), sayCommand);
-    }
-
     public static void AddBetrayal(String player, String pattern) {
         if (state == null)
             return;
         Set<String> patterns = state.betrayalMap.getOrDefault(player, new HashSet<>());
         patterns.add(pattern);
         state.betrayalMap.put(player, patterns);
-        TerritoryManager.LOGGER.info("added " + player + ", " + pattern);
         state.markDirty();
     }
     public static boolean HasBetrayal(String player, String pattern) {

@@ -1,6 +1,8 @@
 package io.github.LummieThief.banner_wars.mixin;
 
+import io.github.LummieThief.banner_wars.CommandManager;
 import io.github.LummieThief.banner_wars.TerritoryManager;
+import net.minecraft.block.BlockState;
 import net.minecraft.block.entity.BannerBlockEntity;
 import net.minecraft.enchantment.EnchantmentHelper;
 import net.minecraft.entity.EntityType;
@@ -17,6 +19,8 @@ import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.util.ActionResult;
 import net.minecraft.util.ClickType;
 import net.minecraft.util.Hand;
+import net.minecraft.util.TypedActionResult;
+import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.World;
 import org.spongepowered.asm.mixin.Mixin;
@@ -34,6 +38,31 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 public abstract class ItemStackMixin {
     @Shadow public abstract Item getItem();
 
+    @Inject(method = "use", at = @At(value = "RETURN"))
+    public void PreventArmorEquip(World world, PlayerEntity user, Hand hand, CallbackInfoReturnable<TypedActionResult<ItemStack>> cir) {
+        if (cir.getReturnValue().getResult().equals(ActionResult.FAIL)
+                && cir.getReturnValue().getValue() != null
+                && cir.getReturnValue().getValue().getItem() instanceof Equipment e
+                && e.getSlotType().equals(EquipmentSlot.HEAD)
+                && user instanceof ServerPlayerEntity player
+                && TerritoryManager.IsBanner(user.getEquippedStack(EquipmentSlot.HEAD))) {
+
+            ScreenHandler screenHandler = player.currentScreenHandler;
+            PlayerInventory inventory = player.getInventory();
+            int slot = hand == Hand.OFF_HAND ? 45 : PlayerInventory.MAIN_SIZE + inventory.selectedSlot;
+            player.networkHandler.sendPacket(new ScreenHandlerSlotUpdateS2CPacket(
+                    screenHandler.syncId,
+                    screenHandler.getRevision(),
+                    slot,
+                    player.getStackInHand(hand)));
+            player.networkHandler.sendPacket(new ScreenHandlerSlotUpdateS2CPacket(
+                    screenHandler.syncId,
+                    screenHandler.getRevision(),
+                    5,
+                    player.getEquippedStack(EquipmentSlot.HEAD)));
+        }
+    }
+
     @Redirect(method = "useOnBlock", at = @At(value = "INVOKE", target = "Lnet/minecraft/item/Item;useOnBlock(Lnet/minecraft/item/ItemUsageContext;)Lnet/minecraft/util/ActionResult;"))
     private ActionResult overrideUseOnBlock(Item item, ItemUsageContext context) {
         if (context.getWorld().isClient || !context.getWorld().getRegistryKey().equals(World.OVERWORLD))
@@ -45,7 +74,17 @@ public abstract class ItemStackMixin {
         }
 
         ItemStack stack = (ItemStack)(Object)this;
-        boolean territorialPermission = TerritoryManager.HasPermission(context.getWorld(), context.getPlayer(), context.getBlockPos());
+        BlockState clickedBlock = context.getWorld().getBlockState(context.getBlockPos());
+        BlockPos blockPlacementPos;
+        if (clickedBlock.isReplaceable()) {
+            TerritoryManager.LOGGER.info("using block pos");
+            blockPlacementPos = context.getBlockPos();
+        }
+        else {
+            TerritoryManager.LOGGER.info("using block pos + side");
+            blockPlacementPos = context.getBlockPos().add(context.getSide().getVector());
+        }
+        boolean territorialPermission = TerritoryManager.HasPermission(context.getWorld(), context.getPlayer(), blockPlacementPos);
 
         // the player has personal permission to place a block if it isn't a banner, it is a blank banner, or it is a banner that matches the banner
         // on their head and the chunk isn't currently claimed.
@@ -59,7 +98,7 @@ public abstract class ItemStackMixin {
             String thisPattern = TerritoryManager.BannerToString(stack);
             assert thisPattern != null; // this cannot be null because we can only reach this block if stack is a banner with a pattern;
             String headPattern = TerritoryManager.BannerToString(context.getPlayer().getInventory().getArmorStack(3));
-            personalPermission = thisPattern.equals(headPattern) && (TerritoryManager.GetBannerInChunk(context.getBlockPos()) == null);
+            personalPermission = thisPattern.equals(headPattern) && (TerritoryManager.GetBannerInChunk(blockPlacementPos) == null);
         }
 
         if (territorialPermission && personalPermission) {
@@ -87,6 +126,7 @@ public abstract class ItemStackMixin {
         }
         ItemStack equippedStack = (ItemStack)(Object)this;
         if (TerritoryManager.HasPattern(stack)) {
+            if (!(stack.getItem() instanceof BannerItem bannerItem)) return;
             // attempting to put a banner with a pattern in the head slot
             String pattern = TerritoryManager.BannerToString(stack);
             assert pattern != null; // pattern cannot be null because we just checked that stack has a pattern.
@@ -95,6 +135,7 @@ public abstract class ItemStackMixin {
                 return;
 
             boolean b = false;
+
             if (stack.getCount() > 1) {
                 // if we have multiple banners in our hand, we can only equip one if the helmet slot is currently empty.
                 if (!slot.hasStack()) {
@@ -115,10 +156,8 @@ public abstract class ItemStackMixin {
             }
             if (b) {
                 player.onEquipStack(EquipmentSlot.HEAD, equippedStack, Items.LEATHER_HELMET.getDefaultStack());
-                if (stack.getItem() instanceof BannerItem bannerItem) {
-                    TerritoryManager.CreateFireworkEffect(player.getWorld(), player.getX(), player.getY() + 2.5, player.getZ(),
-                            BannerBlockEntity.getPatternsFromNbt(bannerItem.getColor(), BannerBlockEntity.getPatternListNbt(stack)));
-                }
+                TerritoryManager.CreateFireworkEffect(player.getWorld(), player.getX(), player.getY() + 2.5, player.getZ(),
+                        BannerBlockEntity.getPatternsFromNbt(bannerItem.getColor(), BannerBlockEntity.getPatternListNbt(stack)));
             }
         }
         else if (clickType.equals(ClickType.LEFT) && stack.isOf(Items.FLINT_AND_STEEL) && TerritoryManager.IsBanner(equippedStack)) {
@@ -135,7 +174,7 @@ public abstract class ItemStackMixin {
 
             String cmd = String.format("/tellraw @a [{\"text\":\"[Server] \"},{\"text\":\"%s\",\"color\":\"yellow\"}," +
                     "{\"text\":\" has abandoned their alliance and will NOT be coming back.\",\"color\":\"red\"}]", player.getEntityName());
-            TerritoryManager.ExecuteCommand(cmd);
+            CommandManager.ExecuteCommand(cmd);
         }
     }
 }

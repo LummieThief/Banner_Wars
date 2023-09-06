@@ -12,6 +12,7 @@
 		"ChorusFruitItemMixin",
 		"DispenserBlockMixin",
 		"EnchantmentHelperMixin",
+		"ExperienceOrbMixin",
 		"ExplosionMixin",
 		"FallingBlockEntityMixin",
 		"FireBlockMixin",

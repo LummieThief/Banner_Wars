@@ -15,7 +15,7 @@ Right-clicking a banner with a brush has the following effects:
     1. If the clicked banner has a pattern and the player who clicked it is wearing a matching banner in their helmet slot:
         The clicked banner's claim timer is refreshed to 24 hours (and the brush loses durability).
     2. If the clicked banner has no pattern, the player who clicked it is wearing a banner, and the chunk containing the clicked banner is not already claimed:
-        The clicked banner turns into the banner the player is wearing on their head, and it claims the chunk for 24 hours (and the brush loses durability).
+        The clicked banner turns into the banner the player is wearing on their head, and it claims the chunk for 30 hours (and the brush loses durability).
 While a player is standing in a chunk claimed by the banner they are wearing in their helmet slot, they get Haste 1.
 While a player is standing in a chunk claimed by a banner they are not wearing in their helmet slot, they get Mining Fatigue 1.
 
@@ -26,13 +26,11 @@ While a chunk is in decay, none of its regular protections apply (except for the
 While a chunk is in decay, any events that would cause it to enter decay again have no effect.
 When a chunk exits decay, it will be unable to enter decay again for 15 minutes.
 When a player is damaged by another player, the damaged player's equipped Elytra immediately breaks unless both players are wearing matching banners.
+Elytra cant be repaired by mending when broken.
 When a player logs off the server while in combat with a player, if the fleeing player is wearing a banner, all chunks claimed by that banner enter decay for 15 minutes.
 
-Sticky piston can pull block out of chunk
-TODO: Placing a block off of a block that is claimed doesnt work
-Chorus fruit nerf
-entities should be killable
-elytra dupe
-TODO: territory status command
-Concurrency issue when 2 entries are in decay
-double check falling sand entity
+Known bugs
+Placing a banner on grass desyncs its pattern on the client
+Using a turtle helmet while a banner is equipped desyncs a water breathing status effect on the client that doesn't go away when reaching zero.
+
+TODO: Test placing a banner in a chunk while it is in decay

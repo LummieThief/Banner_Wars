@@ -1,12 +1,9 @@
 package io.github.LummieThief.banner_wars;
 
 import net.fabricmc.fabric.api.event.player.UseBlockCallback;
-import net.minecraft.block.Block;
-import net.minecraft.block.entity.BlockEntity;
-import net.minecraft.block.entity.LockableContainerBlockEntity;
+import net.minecraft.block.BlockState;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.PlayerInventory;
-import net.minecraft.item.VerticallyAttachableBlockItem;
 import net.minecraft.network.packet.s2c.play.ScreenHandlerSlotUpdateS2CPacket;
 import net.minecraft.screen.ScreenHandler;
 import net.minecraft.server.network.ServerPlayerEntity;
@@ -24,19 +21,11 @@ public class UseBlockHandler implements UseBlockCallback {
         if (!(player instanceof ServerPlayerEntity serverPlayer) || world.isClient || !world.getRegistryKey().equals(World.OVERWORLD)) {
             return ActionResult.PASS;
         }
-
         // if the player doesn't have permission
         if (!TerritoryManager.HasPermission(world, player, hitResult.getBlockPos())) {
-            BlockEntity be = world.getBlockEntity(hitResult.getBlockPos());
-            // check if they are trying to open a container, and if they are then let it pass
-            if (be != null && be.getCachedState().getBlock().asItem() instanceof VerticallyAttachableBlockItem) {
-                world.updateListeners(hitResult.getBlockPos(), be.getCachedState(), be.getCachedState(), Block.NOTIFY_LISTENERS);
-            }
-            else if (be instanceof LockableContainerBlockEntity && !player.isSneaking()) {
-                return ActionResult.PASS;
-            }
-            // otherwise, they truly don't have permission
-            else {
+            //BlockEntity be = world.getBlockEntity(hitResult.getBlockPos());
+            BlockState state = world.getBlockState(hitResult.getBlockPos());
+            if (TerritoryManager.blocklist.isBlacklisted(state.getBlock()) && !player.isSneaking()) {
                 ScreenHandler screenHandler = player.currentScreenHandler;
                 PlayerInventory inventory = player.getInventory();
                 int slot = hand == Hand.OFF_HAND ? 45 : PlayerInventory.MAIN_SIZE + inventory.selectedSlot;
@@ -45,8 +34,6 @@ public class UseBlockHandler implements UseBlockCallback {
                         screenHandler.getRevision(),
                         slot,
                         player.getStackInHand(hand)));
-                //TODO: This is where placing a block on the perimeter fails.
-
                 return ActionResult.FAIL;
             }
         }

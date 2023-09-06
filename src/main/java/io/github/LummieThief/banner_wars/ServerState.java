@@ -8,11 +8,9 @@ import net.minecraft.server.world.ServerWorld;
 import net.minecraft.world.PersistentState;
 import net.minecraft.world.PersistentStateManager;
 import net.minecraft.world.World;
+import org.jetbrains.annotations.NotNull;
 
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 /*
 nbt{
@@ -37,6 +35,7 @@ nbt{
 */
 public class ServerState extends PersistentState {
     private static final boolean RESET = false;
+    public Map<String, TerritoryData> territoryMap = new HashMap<>();
     public Map<Long, ChunkData> chunkMap = new HashMap<>();
     public Map<String, DecayData> decayMap = new HashMap<>();
     public Map<String, Set<String>> betrayalMap = new HashMap<>();
@@ -76,7 +75,6 @@ public class ServerState extends PersistentState {
             }
             nbt.put("players", players);
         }
-        TerritoryManager.LOGGER.info(nbt.toString());
         return nbt;
     }
 
@@ -88,11 +86,14 @@ public class ServerState extends PersistentState {
         else {
             state.chunkMap = new HashMap<>();
             state.betrayalMap = new HashMap<>();
+            state.territoryMap = new HashMap<>();
+
             NbtList chunkList = tag.getList("chunks", NbtElement.COMPOUND_TYPE);
             for (int i = 0; i < chunkList.size(); i++) {
                 NbtCompound chunk = chunkList.getCompound(i);
-                ChunkData chunkData = new ChunkData(chunk.getString("banner"), chunk.getLong("pos"), chunk.getInt("epoch"));
-                state.chunkMap.put(TerritoryManager.ConvertBlockEncodingToChunkEncoding(chunkData.bannerPos()), chunkData);
+                String banner = chunk.getString("banner");
+                ChunkData chunkData = new ChunkData(banner, chunk.getLong("pos"), chunk.getInt("epoch"));
+                state.AddChunk(TerritoryManager.ConvertBlockEncodingToChunkEncoding(chunkData.bannerPos()), chunkData);
             }
 
             NbtList playerList = tag.getList("players", NbtElement.COMPOUND_TYPE);
@@ -126,5 +127,40 @@ public class ServerState extends PersistentState {
                 ServerState::new,
                 TerritoryManager.MOD_ID);
 
+    }
+
+    public void AddChunk(Long chunkCode, ChunkData data) {
+        TerritoryData territory = territoryMap.computeIfAbsent(data.bannerPattern(), k -> new TerritoryData());
+
+        ChunkData oldData = chunkMap.get(chunkCode);
+        if (oldData != null) {
+            territory.remove(oldData);
+        }
+
+        chunkMap.put(chunkCode, data);
+        territory.add(data);
+        markDirty();
+    }
+
+    public void RemoveChunk(Long chunkCode) {
+        ChunkData data = chunkMap.remove(chunkCode);
+        if (data != null) {
+            TerritoryData territory = territoryMap.get(data.bannerPattern());
+            if (territory == null)
+                return;
+            if (territory.remove(data))
+                markDirty();
+            if (territory.size() == 0)
+                territoryMap.remove(data.bannerPattern());
+        }
+    }
+
+    public List<ChunkData> PeekTerritoryData(@NotNull String pattern, int window) {
+        TerritoryData data = territoryMap.get(pattern);
+        if (data == null) {
+            return new ArrayList<>();
+        }
+
+        return data.peek(window);
     }
 }

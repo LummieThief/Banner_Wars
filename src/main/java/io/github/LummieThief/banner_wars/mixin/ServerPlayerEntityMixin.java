@@ -1,6 +1,7 @@
 package io.github.LummieThief.banner_wars.mixin;
 
 import com.mojang.authlib.GameProfile;
+import io.github.LummieThief.banner_wars.CommandManager;
 import io.github.LummieThief.banner_wars.TerritoryManager;
 import net.minecraft.advancement.criterion.Criteria;
 import net.minecraft.entity.EquipmentSlot;
@@ -80,7 +81,7 @@ public abstract class ServerPlayerEntityMixin extends PlayerEntity {
             if (TerritoryManager.DecayBanner(pattern, this.getEntityName())) {
                 String cmd = String.format("/tellraw @a [{\"text\":\"[Server] \"},{\"text\":\"%s\",\"color\":\"yellow\"}," +
                         "{\"text\":\" has fallen in battle! Their territory is now open to attack for the next 15 minutes.\",\"color\":\"red\"}]", this.getEntityName());
-                TerritoryManager.ExecuteCommand(cmd);
+                CommandManager.ExecuteCommand(cmd);
             }
         }
     }
@@ -95,7 +96,6 @@ public abstract class ServerPlayerEntityMixin extends PlayerEntity {
 
             if (!TerritoryManager.IsBanner(headStack) || !headStack.equals(otherStack)) {
                 ItemStack chestStack = getEquippedStack(EquipmentSlot.CHEST);
-                TerritoryManager.LOGGER.info(chestStack.toString());
                 if (chestStack.getItem().equals(Items.ELYTRA)) {
                     if (chestStack.getDamage() != chestStack.getMaxDamage() - 1) {
                         chestStack.setDamage(chestStack.getMaxDamage() - 1);
