@@ -77,11 +77,9 @@ public abstract class ItemStackMixin {
         BlockState clickedBlock = context.getWorld().getBlockState(context.getBlockPos());
         BlockPos blockPlacementPos;
         if (clickedBlock.isReplaceable()) {
-            TerritoryManager.LOGGER.info("using block pos");
             blockPlacementPos = context.getBlockPos();
         }
         else {
-            TerritoryManager.LOGGER.info("using block pos + side");
             blockPlacementPos = context.getBlockPos().add(context.getSide().getVector());
         }
         boolean territorialPermission = TerritoryManager.HasPermission(context.getWorld(), context.getPlayer(), blockPlacementPos);

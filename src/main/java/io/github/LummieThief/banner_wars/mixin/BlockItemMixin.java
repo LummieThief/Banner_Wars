@@ -62,7 +62,6 @@ public class BlockItemMixin {
     private void overrideCanPlace(ItemPlacementContext context, BlockState state, CallbackInfoReturnable<Boolean> cir) {
         if (context.getWorld().isClient  || !context.getWorld().getRegistryKey().equals(World.OVERWORLD) || context.getPlayer() == null)
             return;
-        TerritoryManager.LOGGER.info("BlockItemMixin");
         PlayerEntity player = context.getPlayer();
         Hand hand = context.getHand();
         ItemStack handItem = player.getStackInHand(hand);

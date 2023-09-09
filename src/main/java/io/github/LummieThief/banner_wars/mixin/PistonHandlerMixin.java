@@ -14,7 +14,9 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 @Mixin(PistonHandler.class)
 public class PistonHandlerMixin {
@@ -33,6 +35,7 @@ public class PistonHandlerMixin {
         boolean cancelled = false;
         BlockPos pistonFrom = posFrom;
         BlockPos pistonTo = posFrom.add(pistonDirection.getVector());
+        Set<BlockPos> set = new HashSet<>();
         if (!TerritoryManager.HasPermission(world, pistonFrom, pistonTo)) {
             cir.setReturnValue(false);
         }
@@ -41,18 +44,21 @@ public class PistonHandlerMixin {
             for (BlockPos blockFrom : movedBlocks) {
                 BlockPos blockTo = blockFrom.add(motionDirection.getVector());
                 // checks if all of those blocks are in a chunk the piston can interact with and will be moving into a chunk the piston can interact with
-                if (!cancelled && !TerritoryManager.HasPermission(world,pistonFrom, blockTo) || !TerritoryManager.HasPermission(world,pistonFrom, blockFrom)) {
+                if (!TerritoryManager.HasPermission(world,pistonFrom, blockTo) || !TerritoryManager.HasPermission(world,pistonFrom, blockFrom)) {
                     cancelled = true;
                 }
-
-                BlockState state = world.getBlockState(blockFrom);
-                world.updateListeners(blockFrom, state, state, Block.NOTIFY_LISTENERS);
-                BlockState nextState = world.getBlockState(blockTo);
-                world.updateListeners(blockTo, nextState, nextState, Block.NOTIFY_LISTENERS);
+                set.add(blockFrom);
+                set.add(blockTo);
             }
         }
 
-        if (cancelled)
+        if (cancelled) {
+            for (BlockPos pos : set) {
+                BlockState state = world.getBlockState(pos);
+                world.updateListeners(pos, state, state, Block.NOTIFY_LISTENERS);
+            }
             cir.setReturnValue(false);
+        }
+
     }
 }
