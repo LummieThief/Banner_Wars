@@ -24,7 +24,7 @@ public class ExplosionMixin {
             at = @At(value="INVOKE", target = "Lit/unimi/dsi/fastutil/objects/ObjectArrayList;addAll(Ljava/util/Collection;)Z"),
             locals = LocalCapture.CAPTURE_FAILHARD)
     public void captureSet(CallbackInfo ci, Set<BlockPos> set) {
-        if (world.isClient || !world.getRegistryKey().equals(World.OVERWORLD))
+        if (world.isClient || !world.getRegistryKey().equals(World.OVERWORLD) || set == null)
             return;
         Iterator<BlockPos> itr = set.iterator();
         String banner;
